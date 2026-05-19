@@ -55,13 +55,11 @@ describe("runHarness", () => {
         return { queries: [], done: true, reason: "enough" };
       },
     };
-    const cloud: CloudActionClient = {
-      name: "spy",
-      proposeActions: vi.fn(async (p: FinalPrompt) => {
-        order.push("cloud");
-        return { model: "spy", text: `ok ${p.chars}` };
-      }),
-    };
+    const proposeActions = vi.fn(async (p: FinalPrompt) => {
+      order.push("cloud");
+      return { model: "spy", text: `ok ${p.chars}` };
+    });
+    const cloud: CloudActionClient = { name: "spy", proposeActions };
 
     const result = await runHarness({
       repoDir: dir,
@@ -70,7 +68,7 @@ describe("runHarness", () => {
       cloudClient: cloud,
     });
 
-    expect(cloud.proposeActions).toHaveBeenCalledTimes(1);
+    expect(proposeActions).toHaveBeenCalledTimes(1);
     // Cloud is the very last step, after every local plan round.
     expect(order[order.length - 1]).toBe("cloud");
     expect(order.filter((o) => o === "cloud")).toHaveLength(1);
@@ -79,10 +77,8 @@ describe("runHarness", () => {
   });
 
   it("does not touch the cloud client on a dry run", async () => {
-    const cloud: CloudActionClient = {
-      name: "spy",
-      proposeActions: vi.fn(async () => ({ model: "spy", text: "nope" })),
-    };
+    const proposeActions = vi.fn(async () => ({ model: "spy", text: "nope" }));
+    const cloud: CloudActionClient = { name: "spy", proposeActions };
     const result = await runHarness({
       repoDir: dir,
       task: "inspect uploader",
@@ -90,7 +86,7 @@ describe("runHarness", () => {
       cloudClient: cloud,
       dryRun: true,
     });
-    expect(cloud.proposeActions).not.toHaveBeenCalled();
+    expect(proposeActions).not.toHaveBeenCalled();
     expect(result.stats.cloudCalled).toBe(false);
     expect(result.prompt.user).toContain("# Task");
   });
