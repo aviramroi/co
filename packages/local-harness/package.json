@@ -1,0 +1,42 @@
+{
+  "name": "@openclaw/local-harness",
+  "version": "2026.2.13",
+  "private": true,
+  "description": "Local-model coding-agent harness: all repo search runs locally, the cloud LLM API is called only once for the actual actions after the full prompt is collected",
+  "bin": {
+    "local-harness": "./local-harness.mjs"
+  },
+  "files": [
+    "local-harness.mjs",
+    "src/",
+    "README.md"
+  ],
+  "type": "module",
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx src/cli.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
+  },
+  "peerDependencies": {
+    "node-llama-cpp": "3.15.1"
+  },
+  "peerDependenciesMeta": {
+    "node-llama-cpp": {
+      "optional": true
+    }
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}
