@@ -1,0 +1,25 @@
+{
+  "name": "tif-proxy",
+  "version": "0.1.0",
+  "description": "Local MCP proxy that re-encodes verbose tool results as TIF to cut the tokens your LLM has to read",
+  "keywords": [
+    "llm",
+    "mcp",
+    "model-context-protocol",
+    "proxy",
+    "tif",
+    "tokens"
+  ],
+  "license": "MIT",
+  "bin": {
+    "tif-proxy": "./bin/tif-proxy.mjs"
+  },
+  "files": [
+    "bin/",
+    "README.md"
+  ],
+  "type": "module",
+  "dependencies": {
+    "openclaw": "workspace:*"
+  }
+}

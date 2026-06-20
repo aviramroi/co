@@ -37,6 +37,13 @@ export default defineConfig([
     platform: "node",
   },
   {
+    entry: ["src/tif-proxy/index.ts", "src/tif-proxy/cli.ts"],
+    outDir: "dist/tif-proxy",
+    env,
+    fixedExtension: false,
+    platform: "node",
+  },
+  {
     entry: ["src/hooks/bundled/*/handler.ts", "src/hooks/llm-slug-generator.ts"],
     env,
     fixedExtension: false,
