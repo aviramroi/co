@@ -18,10 +18,13 @@ export {
 
 export {
   isRecordArray,
+  maybeDecodeTif,
   maybeEncodeText,
   TIF_INSTRUCTIONS,
   TIF_MARKER,
   transformLine,
   transformMessage,
+  transformRequestLine,
+  transformRequestMessage,
   type TransformOptions,
 } from "./transform.js";

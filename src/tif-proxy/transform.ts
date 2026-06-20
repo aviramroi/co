@@ -6,7 +6,7 @@
 // tokens, losslessly). Requests (client -> upstream) pass through untouched, so
 // tool inputs and protocol semantics are unaffected.
 
-import { encode } from "../tif/index.js";
+import { decode, encode } from "../tif/index.js";
 
 export const TIF_MARKER = "[TIF v0.1]";
 
@@ -21,6 +21,11 @@ export const TIF_INSTRUCTIONS = [
   '  List elements are separated by ",".',
   '- Empty field = null; "\\e" = empty string; "\\a" = empty array; "\\|" "\\," "\\n" are escaped.',
   "Treat the reconstructed records exactly as the equivalent JSON.",
+  "",
+  "You may also SEND large array-of-record tool arguments in this TIF format:",
+  `pass the argument value as a string starting with "${TIF_MARKER}" instead of a JSON array,`,
+  "and it will be decoded back to JSON before the tool runs. Use it for bulk inputs",
+  "(e.g. creating/updating many records) to spend far fewer tokens; small args stay JSON.",
 ].join("\n");
 
 export interface TransformOptions {
@@ -158,5 +163,74 @@ export function transformLine(line: string, options: TransformOptions = {}): str
     return line; // not JSON — pass through unchanged
   }
   const { message, changed } = transformMessage(parsed, options);
+  return changed ? JSON.stringify(message) : line;
+}
+
+// --- request direction (client -> upstream): decode compact inputs ----------
+
+/**
+ * If `value` is a TIF-marked string, decode it back to records; otherwise return
+ * it unchanged. This is how the model opts in to compact inputs per-argument: it
+ * only fires when the value actually starts with the TIF marker, so normal JSON
+ * arguments pass through and the upstream server only ever sees standard JSON.
+ */
+export function maybeDecodeTif(value: unknown): unknown {
+  if (typeof value !== "string" || !value.startsWith(TIF_MARKER)) {
+    return value;
+  }
+  try {
+    return decode(value.slice(value.indexOf("\n") + 1));
+  } catch {
+    return value; // malformed — forward as-is rather than guess
+  }
+}
+
+/**
+ * Decode TIF-encoded arguments in a `tools/call` request before it reaches the
+ * server. Never throws — on any problem the original message is returned so the
+ * call still goes through untouched.
+ */
+export function transformRequestMessage(msg: JsonRpcMessage): {
+  message: JsonRpcMessage;
+  changed: boolean;
+} {
+  try {
+    if (msg.method !== "tools/call" || !isPlainObject(msg.params)) {
+      return { message: msg, changed: false };
+    }
+    const args = msg.params.arguments;
+    if (!isPlainObject(args)) {
+      return { message: msg, changed: false };
+    }
+    let changed = false;
+    const decoded: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(args)) {
+      const out = maybeDecodeTif(v);
+      if (out !== v) {
+        changed = true;
+      }
+      decoded[k] = out;
+    }
+    if (!changed) {
+      return { message: msg, changed: false };
+    }
+    return { message: { ...msg, params: { ...msg.params, arguments: decoded } }, changed: true };
+  } catch {
+    return { message: msg, changed: false };
+  }
+}
+
+/** Transform one line of the client stdin stream (requests). */
+export function transformRequestLine(line: string): string {
+  if (line.trim() === "") {
+    return line;
+  }
+  let parsed: JsonRpcMessage;
+  try {
+    parsed = JSON.parse(line) as JsonRpcMessage;
+  } catch {
+    return line;
+  }
+  const { message, changed } = transformRequestMessage(parsed);
   return changed ? JSON.stringify(message) : line;
 }

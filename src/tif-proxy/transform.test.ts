@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { decode } from "../tif/index.js";
+import { decode, encode } from "../tif/index.js";
 import {
   isRecordArray,
+  maybeDecodeTif,
   maybeEncodeText,
   TIF_MARKER,
   transformLine,
   transformMessage,
+  transformRequestLine,
+  transformRequestMessage,
 } from "./transform.js";
 
 const records = [
@@ -94,5 +97,58 @@ describe("transformLine", () => {
   it("passes through non-JSON and blank lines verbatim", () => {
     expect(transformLine("not json")).toBe("not json");
     expect(transformLine("")).toBe("");
+  });
+});
+
+describe("input decoding (client -> upstream)", () => {
+  it("maybeDecodeTif round-trips a TIF-marked argument and leaves others alone", () => {
+    const tifArg = `${TIF_MARKER}\n${encode(records)}`;
+    expect(maybeDecodeTif(tifArg)).toEqual(records);
+    expect(maybeDecodeTif("plain string")).toBe("plain string");
+    expect(maybeDecodeTif(42)).toBe(42);
+    expect(maybeDecodeTif({ a: 1 })).toEqual({ a: 1 });
+  });
+
+  it("decodes TIF tool-call arguments back to JSON for the server", () => {
+    const tifArg = `${TIF_MARKER}\n${encode(records)}`;
+    const msg = {
+      jsonrpc: "2.0",
+      id: 4,
+      method: "tools/call",
+      params: { name: "bulk_create", arguments: { sobject: "Account", records: tifArg } },
+    };
+    const { message, changed } = transformRequestMessage(msg);
+    expect(changed).toBe(true);
+    const args = (message.params as { arguments: { records: unknown; sobject: string } }).arguments;
+    expect(args.sobject).toBe("Account"); // untouched
+    expect(args.records).toEqual(records); // decoded to real JSON
+  });
+
+  it("leaves normal JSON arguments and non-tool-call requests untouched", () => {
+    const normal = {
+      jsonrpc: "2.0",
+      id: 5,
+      method: "tools/call",
+      params: { name: "x", arguments: { a: 1, b: "two" } },
+    };
+    expect(transformRequestMessage(normal).changed).toBe(false);
+    const list = { jsonrpc: "2.0", id: 6, method: "tools/list" };
+    expect(transformRequestMessage(list).changed).toBe(false);
+  });
+
+  it("transformRequestLine rewrites only when something was decoded", () => {
+    const tifArg = `${TIF_MARKER}\n${encode(records)}`;
+    const line = JSON.stringify({
+      jsonrpc: "2.0",
+      id: 7,
+      method: "tools/call",
+      params: { name: "bulk", arguments: { rows: tifArg } },
+    });
+    const out = transformRequestLine(line);
+    const parsed = JSON.parse(out) as { params: { arguments: { rows: unknown } } };
+    expect(parsed.params.arguments.rows).toEqual(records);
+    expect(transformRequestLine('{"jsonrpc":"2.0","method":"ping"}')).toBe(
+      '{"jsonrpc":"2.0","method":"ping"}',
+    );
   });
 });

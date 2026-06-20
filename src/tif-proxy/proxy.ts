@@ -7,7 +7,7 @@
 
 import type { Readable, Writable } from "node:stream";
 import { spawn as nodeSpawn, type ChildProcessWithoutNullStreams } from "node:child_process";
-import { transformLine, type TransformOptions } from "./transform.js";
+import { transformLine, transformRequestLine, type TransformOptions } from "./transform.js";
 
 export interface ProxyStreams {
   stdin: Readable; // data coming from the MCP client
@@ -21,6 +21,10 @@ export interface RunProxyConfig {
   args: string[];
   streams: ProxyStreams;
   options?: TransformOptions;
+  /** Re-encode tool results as TIF (upstream -> client). Default true. */
+  encodeOutputs?: boolean;
+  /** Decode TIF-encoded tool arguments (client -> upstream). Default true. */
+  decodeInputs?: boolean;
   /** Injectable spawn for testing; defaults to node:child_process.spawn. */
   spawnFn?: typeof nodeSpawn;
 }
@@ -34,6 +38,7 @@ export function pipeLines(
   input: Readable,
   output: Writable,
   transform: (line: string) => string,
+  opts: { endOutput?: boolean } = {},
 ): () => void {
   let buffer = "";
   input.on("data", (chunk: Buffer | string) => {
@@ -51,7 +56,14 @@ export function pipeLines(
       buffer = "";
     }
   };
-  input.on("end", flush);
+  input.on("end", () => {
+    flush();
+    // Propagate EOF to the upstream's stdin so it can shut down. Never end the
+    // client-facing stdout this way (that's the process's own stream).
+    if (opts.endOutput) {
+      output.end();
+    }
+  });
   return flush;
 }
 
@@ -62,11 +74,18 @@ export function runProxy(config: RunProxyConfig): ChildProcessWithoutNullStreams
     stdio: ["pipe", "pipe", "pipe"],
   });
 
-  // client -> upstream (requests pass through unchanged)
-  config.streams.stdin.pipe(child.stdin);
+  // client -> upstream: decode TIF-encoded tool arguments back to JSON
+  if (config.decodeInputs ?? true) {
+    pipeLines(config.streams.stdin, child.stdin, transformRequestLine, { endOutput: true });
+  } else {
+    config.streams.stdin.pipe(child.stdin);
+  }
 
-  // upstream -> client (results re-encoded as TIF)
-  pipeLines(child.stdout, config.streams.stdout, (line) => transformLine(line, config.options));
+  // upstream -> client: re-encode tool results as TIF
+  const encodeOutputs = config.encodeOutputs ?? true;
+  pipeLines(child.stdout, config.streams.stdout, (line) =>
+    encodeOutputs ? transformLine(line, config.options) : line,
+  );
 
   // upstream logs pass through
   child.stderr.pipe(config.streams.stderr);
@@ -78,11 +97,15 @@ export interface ParsedArgs {
   command: string;
   args: string[];
   options: TransformOptions;
+  encodeOutputs: boolean;
+  decodeInputs: boolean;
 }
 
-/** Parse `--min-rows N -- <command> [args...]`. Throws on missing command. */
+/** Parse `[flags] -- <command> [args...]`. Throws on missing command. */
 export function parseArgs(argv: string[]): ParsedArgs {
   const options: TransformOptions = {};
+  let encodeOutputs = true;
+  let decodeInputs = true;
   let i = 0;
   for (; i < argv.length; i++) {
     const a = argv[i];
@@ -92,6 +115,14 @@ export function parseArgs(argv: string[]): ParsedArgs {
     }
     if (a === "--min-rows") {
       options.minRows = Number(argv[++i]);
+      continue;
+    }
+    if (a === "--no-encode-outputs") {
+      encodeOutputs = false;
+      continue;
+    }
+    if (a === "--no-decode-inputs") {
+      decodeInputs = false;
       continue;
     }
     if (a === "-h" || a === "--help") {
@@ -107,7 +138,7 @@ export function parseArgs(argv: string[]): ParsedArgs {
   if (rest.length === 0) {
     throw new ProxyUsageError(`Missing upstream command.\n\n${USAGE}`);
   }
-  return { command: rest[0], args: rest.slice(1), options };
+  return { command: rest[0], args: rest.slice(1), options, encodeOutputs, decodeInputs };
 }
 
 export class ProxyUsageError extends Error {}
@@ -116,7 +147,10 @@ export const USAGE = [
   "tif-proxy — a local MCP proxy that re-encodes tool results as TIF to cut tokens.",
   "",
   "Usage:",
-  "  tif-proxy [--min-rows N] -- <mcp-server-command> [args...]",
+  "  tif-proxy [--min-rows N] [--no-encode-outputs] [--no-decode-inputs] -- <mcp-server-command> [args...]",
+  "",
+  "Re-encodes tool results as TIF (outputs) and decodes TIF-encoded tool",
+  "arguments back to JSON (inputs). Both directions are on by default.",
   "",
   "Example (wrap the GitHub MCP server):",
   "  tif-proxy -- npx -y @modelcontextprotocol/server-github",
@@ -139,6 +173,8 @@ export function runProxyMain(argv: string[]): void {
     command: parsed.command,
     args: parsed.args,
     options: parsed.options,
+    encodeOutputs: parsed.encodeOutputs,
+    decodeInputs: parsed.decodeInputs,
     streams: { stdin: process.stdin, stdout: process.stdout, stderr: process.stderr },
   });
 
