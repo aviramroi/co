@@ -114,6 +114,48 @@ and platform companies: Microsoft, Amazon, Google, NVIDIA, Meta, Apple.
 
 ---
 
+## Part 2 — SaaS & developer-tool companies (the real MCP leaders)
+
+The biggest companies *by market cap* aren't the ones driving MCP adoption.
+The richest, most-used **official** MCP servers come from SaaS / dev-tool
+vendors. Through Q1–Q2 2026, vendor-official servers replaced community ones in
+most categories. Here are the heavy hitters (incl. Salesforce, Linear, Supabase).
+
+| Company | Official MCP server | Most-used API | Primary CLI |
+|---------|---------------------|----------------|-------------|
+| **Salesforce** | **Salesforce DX MCP** (`@salesforce/mcp`) + Data 360 MCP; 60+ tools | REST / Agentforce / Data Cloud APIs | **`sf`** (Salesforce CLI) |
+| **Linear** | **Official remote MCP** (`mcp.linear.app`) | Linear **GraphQL API** | — (API/SDK-first; no flagship CLI) |
+| **Supabase** | **Official MCP** (`supabase/mcp`, remote + OAuth, 20+ tools) | Supabase REST (PostgREST) + Auth | **`supabase`** CLI |
+| **Stripe** | **Official Stripe MCP** | Stripe **REST API** (payments) | **`stripe`** CLI |
+| **Cloudflare** | **Official MCP** (Workers, hosting many remote MCPs) | Cloudflare API + Workers | **`wrangler`** |
+| **Vercel** | **Official remote MCP** | Vercel REST API | **`vercel`** CLI |
+| **Notion** | **Official Notion MCP** | Notion API | — |
+| **Atlassian** | **Official remote MCP** (Jira + Confluence) | Jira / Confluence REST | `acli` / `forge` |
+| **Slack** | **Official Slack MCP** | Slack Web API | — |
+| **Sentry** | **Official Sentry MCP** (remote) | Sentry API | **`sentry-cli`** |
+| **Neon** | **Official Neon MCP** | Neon API | **`neonctl`** |
+| **HubSpot** | **Official HubSpot MCP** | HubSpot CRM API | — |
+
+### Notes on the ones you named
+
+- **Salesforce** — Went all-in on MCP with the **Headless 360** initiative
+  (TDX 2026): *every* platform capability (CRM, Agentforce, Data Cloud, Slack)
+  is exposed three ways — **REST/Agentforce APIs, MCP tools, and `sf` CLI
+  commands**. The **Salesforce DX MCP** (`@salesforce/mcp`) connects coding
+  agents (Claude Code, Cursor, Codex, Windsurf) to orgs; the **Data 360 MCP**
+  exposes ~200 API operations via a facade-tool architecture (~60+ tools today).
+- **Linear** — Ships an **official, verified remote MCP server**
+  (`mcp.linear.app`) — one of the most-cited official SaaS MCPs. Linear's API
+  itself is **GraphQL** (most teams use the SDK rather than a CLI).
+- **Supabase** — **Official MCP server** (`supabase/mcp`) with a remote
+  endpoint, native OAuth2, and 20+ tools for DB queries, migrations, edge-
+  function deploys, and project management; pairs with the **`supabase` CLI**
+  for local dev. Its data API is PostgREST over your Postgres schema.
+
+> Of the "universally supported" everyday MCP servers, the independent
+> standout is **Context7** (library docs) — not a big company, but one of the
+> single most-installed servers (~54k★).
+
 ## Cross-cutting takeaways
 
 - **MCP is concentrated in cloud/dev companies.** Microsoft (GitHub, Playwright,
@@ -148,3 +190,10 @@ and platform companies: Microsoft, Amazon, Google, NVIDIA, Meta, Apple.
 - [Get Started With the Microsoft MCP Server for Enterprise (Graph) — Microsoft Learn](https://learn.microsoft.com/en-us/graph/mcp-server/get-started)
 - [NVIDIA NGC User Guide — NVIDIA Docs](https://docs.nvidia.com/ngc/latest/ngc-user-guide.html)
 - [NVIDIA NIM API explained (2026)](https://decodethefuture.org/en/nvidia-nim-api-explained/)
+- [Introducing MCP Support Across Salesforce — Salesforce Developers Blog](https://developer.salesforce.com/blogs/2025/06/introducing-mcp-support-across-salesforce)
+- [Introducing the Data 360 MCP Server (Developer Preview) — Salesforce Developers Blog](https://developer.salesforce.com/blogs/2026/05/introducing-the-data-360-mcp-server-developer-preview)
+- [Salesforce Headless 360: The Entire Platform Is Now an API — Apex Hours](https://www.apexhours.com/salesforce-headless-360-no-browser-required-the-entire-platform-is-now-an-api/)
+- [Announcing the Supabase Remote MCP Server — Supabase Blog](https://supabase.com/blog/remote-mcp-server)
+- [Supabase MCP Server — Supabase Docs](https://supabase.com/docs/guides/ai-tools/mcp)
+- [Linear MCP Server — Official Setup Guide (Apigene)](https://apigene.ai/mcp/official/linear)
+- [MCP Server Ecosystem Reference 2026 — hidekazu-konishi.com](https://hidekazu-konishi.com/entry/mcp_server_ecosystem_reference_2026.html)
