@@ -8,31 +8,30 @@ import {
   type SalesforceClient,
 } from "./facade.js";
 
-function fakeClient(overrides: Partial<SalesforceClient> = {}): SalesforceClient {
-  return {
-    query: vi.fn(
-      async (): Promise<RawQueryResult> => ({
-        totalSize: 1,
-        done: true,
-        records: [
-          {
-            attributes: { type: "Account", url: "/x/001" },
-            Id: "001",
-            Name: "Acme",
-            BillingCity: null,
-          },
-        ],
-      }),
-    ),
-    describe: vi.fn(
-      async (): Promise<RawDescribe> => ({
-        name: "Account",
-        fields: [{ name: "Id", type: "id", nillable: false }],
-      }),
-    ),
-    dml: vi.fn(async () => [{ id: "001", success: true }]),
-    ...overrides,
-  };
+function fakeClient() {
+  const query = vi.fn(
+    async (): Promise<RawQueryResult> => ({
+      totalSize: 1,
+      done: true,
+      records: [
+        {
+          attributes: { type: "Account", url: "/x/001" },
+          Id: "001",
+          Name: "Acme",
+          BillingCity: null,
+        },
+      ],
+    }),
+  );
+  const describe = vi.fn(
+    async (): Promise<RawDescribe> => ({
+      name: "Account",
+      fields: [{ name: "Id", type: "id", nillable: false }],
+    }),
+  );
+  const dml = vi.fn(async () => [{ id: "001", success: true }]);
+  const client: SalesforceClient = { query, describe, dml };
+  return { client, query, describe, dml };
 }
 
 describe("FACADE_TOOLS", () => {
@@ -65,42 +64,43 @@ describe("validateSoql", () => {
 
 describe("dispatch", () => {
   it("routes soql and shapes the response", async () => {
-    const client = fakeClient();
+    const { client, query } = fakeClient();
     const { content } = await dispatch(client, "soql", { query: "SELECT Id, Name FROM Account" });
-    expect(client.query).toHaveBeenCalledOnce();
+    expect(query).toHaveBeenCalledOnce();
     // attributes stripped, nulls dropped, columnar by default
     expect(content).toMatchObject({ n: 1, cols: ["Id", "Name"] });
   });
 
   it("validates before hitting the network", async () => {
-    const client = fakeClient();
+    const { client, query } = fakeClient();
     await expect(dispatch(client, "soql", { query: "SELECT * FROM Account" })).rejects.toThrow(
       ValidationError,
     );
-    expect(client.query).not.toHaveBeenCalled();
+    expect(query).not.toHaveBeenCalled();
   });
 
   it("caches describe by sobject+detail (lever E)", async () => {
-    const client = fakeClient();
+    const { client, describe } = fakeClient();
     const cache = new Map<string, SlimDescribe | RawDescribe>();
     await dispatch(client, "describe", { sobject: "Account" }, { describeCache: cache });
     await dispatch(client, "describe", { sobject: "Account" }, { describeCache: cache });
-    expect(client.describe).toHaveBeenCalledOnce(); // second call served from cache
+    expect(describe).toHaveBeenCalledOnce(); // second call served from cache
     expect(cache.has("Account:slim")).toBe(true);
   });
 
   it("routes dml through to the client", async () => {
-    const client = fakeClient();
+    const { client, dml } = fakeClient();
     const { content } = await dispatch(client, "dml", {
       op: "create",
       sobject: "Account",
       records: [{ Name: "New" }],
     });
-    expect(client.dml).toHaveBeenCalledWith("create", "Account", [{ Name: "New" }]);
+    expect(dml).toHaveBeenCalledWith("create", "Account", [{ Name: "New" }]);
     expect(content).toEqual([{ id: "001", success: true }]);
   });
 
   it("throws on unknown tools", async () => {
-    await expect(dispatch(fakeClient(), "nope", {})).rejects.toThrow(/Unknown facade tool/);
+    const { client } = fakeClient();
+    await expect(dispatch(client, "nope", {})).rejects.toThrow(/Unknown facade tool/);
   });
 });

@@ -155,7 +155,7 @@ function encodeScalar(v: Json, type: ColType, dict: Map<string, number>): string
   if (typeof v === "number") {
     return String(v);
   }
-  const s = String(v);
+  const s = v as string; // only strings remain (j/number/boolean/null handled above)
   if (s === "") {
     return EMPTY_STR_TOKEN;
   }
@@ -183,7 +183,7 @@ function encodeListElement(v: Json, type: ColType, dict: Map<string, number>): s
   if (typeof v === "number") {
     return String(v);
   }
-  const s = String(v);
+  const s = v as string; // only strings remain (j/number/boolean/null handled above)
   if (s === "") {
     return EMPTY_STR_TOKEN;
   }

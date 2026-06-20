@@ -11,7 +11,6 @@ import {
   type RawDescribe,
   type RawQueryResult,
   type SfRecord,
-  type ShapedQuery,
   type SlimDescribe,
 } from "./shape.js";
 
@@ -113,8 +112,14 @@ export function validateSoql(query: string): void {
 }
 
 export interface DispatchResult {
-  // Compact, already-shaped payload destined for the model.
-  content: ShapedQuery | SlimDescribe | RawDescribe | DmlResult[] | unknown;
+  // Compact, already-shaped payload destined for the model. `unknown` covers the
+  // open-ended run_flow result; the named types document the common shapes.
+  content: unknown;
+}
+
+/** Coerce an untyped tool argument to a string without stringifying objects. */
+function asString(v: unknown): string {
+  return typeof v === "string" ? v : "";
 }
 
 export interface DispatchOpts {
@@ -135,7 +140,7 @@ export async function dispatch(
 ): Promise<DispatchResult> {
   switch (tool) {
     case "soql": {
-      const query = String(args.query ?? "");
+      const query = asString(args.query);
       validateSoql(query);
       const raw = await client.query(query);
       return {
@@ -146,7 +151,7 @@ export async function dispatch(
       };
     }
     case "describe": {
-      const sobject = String(args.sobject ?? "");
+      const sobject = asString(args.sobject);
       const detail = (args.detail as "slim" | "full") ?? "slim";
       const key = `${sobject}:${detail}`;
       const cache = opts.describeCache;
@@ -159,7 +164,7 @@ export async function dispatch(
     }
     case "dml": {
       const op = args.op as DmlOp;
-      const sobject = String(args.sobject ?? "");
+      const sobject = asString(args.sobject);
       const records = (args.records as SfRecord[]) ?? [];
       if (!op || !sobject || !Array.isArray(records)) {
         throw new ValidationError("dml requires {op, sobject, records[]}.");
@@ -172,7 +177,7 @@ export async function dispatch(
       }
       return {
         content: await client.runFlow(
-          String(args.name),
+          asString(args.name),
           (args.params as Record<string, unknown>) ?? {},
         ),
       };

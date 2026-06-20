@@ -5,6 +5,8 @@
 // docs/salesforce-mcp-token-abstraction.md for the rationale and the levers
 // (C: strip/slim, D: columnar/TSV, E: describe slim+cache).
 
+import { encode as tifEncode } from "../tif/encode.js";
+
 export type SfRecord = Record<string, unknown> & { attributes?: unknown };
 
 export interface RawQueryResult {
@@ -12,8 +14,6 @@ export interface RawQueryResult {
   totalSize: number;
   done: boolean;
 }
-
-import { encode as tifEncode } from "../tif/encode.js";
 
 export type QueryFormat = "objects" | "columns" | "tsv" | "tif";
 
@@ -89,7 +89,12 @@ function cell(v: unknown): string {
   if (v === null || v === undefined) {
     return "";
   }
-  const s = String(v);
+  const s =
+    typeof v === "string"
+      ? v
+      : typeof v === "number" || typeof v === "boolean"
+        ? String(v)
+        : JSON.stringify(v);
   // Keep TSV well-formed: neutralise embedded tabs/newlines.
   return s.includes("\t") || s.includes("\n") ? s.replace(/[\t\n]+/g, " ") : s;
 }
