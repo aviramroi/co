@@ -163,6 +163,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@anthropic-ai/tokenizer": "^0.0.4",
     "@grammyjs/types": "^3.24.0",
     "@lit-labs/signals": "^0.2.0",
     "@lit/context": "^1.1.6",
@@ -174,6 +175,7 @@
     "@types/ws": "^8.18.1",
     "@typescript/native-preview": "7.0.0-dev.20260212.1",
     "@vitest/coverage-v8": "^4.0.18",
+    "js-tiktoken": "^1.0.21",
     "lit": "^3.3.2",
     "ollama": "^0.6.3",
     "oxfmt": "0.32.0",
