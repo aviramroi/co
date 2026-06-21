@@ -1,7 +1,7 @@
 {
   "name": "tif-proxy",
   "version": "0.1.0",
-  "description": "Local MCP proxy that re-encodes verbose tool results as TIF to cut the tokens your LLM has to read",
+  "description": "Local MCP proxy that re-encodes tool results/arguments as TIF to cut the tokens your LLM spends",
   "keywords": [
     "llm",
     "mcp",
@@ -19,7 +19,11 @@
     "README.md"
   ],
   "type": "module",
-  "dependencies": {
-    "openclaw": "workspace:*"
+  "scripts": {
+    "build": "tsdown -c tsdown.config.ts",
+    "prepublishOnly": "pnpm build"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }
