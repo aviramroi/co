@@ -1,0 +1,29 @@
+{
+  "name": "tif-proxy",
+  "version": "0.1.0",
+  "description": "Local MCP proxy that re-encodes tool results/arguments as TIF to cut the tokens your LLM spends",
+  "keywords": [
+    "llm",
+    "mcp",
+    "model-context-protocol",
+    "proxy",
+    "tif",
+    "tokens"
+  ],
+  "license": "MIT",
+  "bin": {
+    "tif-proxy": "./bin/tif-proxy.mjs"
+  },
+  "files": [
+    "bin/",
+    "README.md"
+  ],
+  "type": "module",
+  "scripts": {
+    "build": "tsdown -c tsdown.config.ts",
+    "prepublishOnly": "pnpm build"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
