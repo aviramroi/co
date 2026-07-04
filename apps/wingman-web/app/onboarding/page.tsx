@@ -3,8 +3,16 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { APPS, type AppId, type OnboardingState } from "@/lib/types";
-import { loadOnboarding, saveOnboarding, getSession } from "@/lib/store";
-import { activateAgent } from "@/lib/wingman";
+import { loadOnboarding, saveOnboarding } from "@/lib/store";
+import { me } from "@/lib/auth";
+import {
+  activateAgent,
+  startChannelLogin,
+  completeChannelLogin,
+  channelStatus,
+} from "@/lib/wingman";
+
+type ChanUi = { state: "idle" | "awaiting" | "connected" | "error"; message?: string };
 
 const STEPS = ["Choose apps", "Connect", "Your voice", "Goals", "Behavior", "Activate"];
 
@@ -14,20 +22,55 @@ export default function OnboardingPage() {
   const [step, setStep] = useState(0);
   const [error, setError] = useState("");
   const [activating, setActivating] = useState(false);
+  const [chan, setChan] = useState<Record<string, ChanUi>>({});
 
   useEffect(() => {
-    if (!getSession()) {
-      router.replace("/signup");
-      return;
-    }
-    setState(loadOnboarding());
+    let alive = true;
+    me().then((u) => {
+      if (!alive) return;
+      if (!u) {
+        router.replace("/login?next=/onboarding");
+        return;
+      }
+      setState(loadOnboarding());
+    });
+    return () => {
+      alive = false;
+    };
   }, [router]);
+
+  // Poll status for any channel whose login is in progress.
+  useEffect(() => {
+    const awaiting = Object.entries(chan)
+      .filter(([, v]) => v.state === "awaiting")
+      .map(([k]) => k as AppId);
+    if (awaiting.length === 0) return;
+    const t = setInterval(async () => {
+      for (const id of awaiting) {
+        const st = await channelStatus(id);
+        if (!st) continue;
+        if (st.connected || st.state === "connected") markConnected(id);
+        else if (st.state === "error") setChan((c) => ({ ...c, [id]: { state: "error", message: st.message } }));
+      }
+    }, 2500);
+    return () => clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chan]);
 
   if (!state) return null;
 
   function update(patch: Partial<OnboardingState>) {
     setState((prev) => {
       const next = { ...prev!, ...patch };
+      saveOnboarding(next);
+      return next;
+    });
+  }
+
+  function markConnected(id: AppId) {
+    setChan((c) => ({ ...c, [id]: { state: "connected" } }));
+    setState((prev) => {
+      const next = { ...prev!, connected: { ...prev!.connected, [id]: true } };
       saveOnboarding(next);
       return next;
     });
@@ -40,10 +83,25 @@ export default function OnboardingPage() {
     update({ selectedApps: selected });
   }
 
-  function connect(id: AppId) {
-    // In production this opens a secure browser login and saves the session
-    // (equivalent to `wingman login <app>`). Here we mark it connected.
-    update({ connected: { ...state!.connected, [id]: true } });
+  async function connect(id: AppId) {
+    setChan((c) => ({ ...c, [id]: { state: "awaiting" } }));
+    const st = await startChannelLogin(id);
+    if (!st) {
+      setChan((c) => ({
+        ...c,
+        [id]: { state: "error", message: "Couldn't reach the agent. Make sure it's running (`wingman run`)." },
+      }));
+      return;
+    }
+    if (st.connected || st.state === "connected") markConnected(id);
+    else if (st.state === "error") setChan((c) => ({ ...c, [id]: { state: "error", message: st.message } }));
+    // otherwise 'awaiting' — the browser opened on the agent host; poller finishes it.
+  }
+
+  async function confirmLoggedIn(id: AppId) {
+    const st = await completeChannelLogin(id);
+    if (st && (st.connected || st.state === "connected")) markConnected(id);
+    else setChan((c) => ({ ...c, [id]: { state: "error", message: st?.message ?? "Not logged in yet." } }));
   }
 
   function canAdvance(): boolean {
@@ -142,6 +200,9 @@ export default function OnboardingPage() {
             {selected.map((id) => {
               const app = APPS.find((a) => a.id === id)!;
               const connected = state.connected[id];
+              const ui = chan[id];
+              const awaiting = !connected && ui?.state === "awaiting";
+              const errored = !connected && ui?.state === "error";
               return (
                 <div className="connect-row" key={id}>
                   <div className="left">
@@ -149,22 +210,34 @@ export default function OnboardingPage() {
                     <div>
                       <div style={{ fontWeight: 600 }}>{app.name}</div>
                       <div className="hint" style={{ margin: 0 }}>
-                        {connected ? "Session saved" : "Not connected"}
+                        {connected
+                          ? "Session saved"
+                          : awaiting
+                            ? "Finish logging in in the opened browser…"
+                            : errored
+                              ? ui?.message
+                              : "Not connected"}
                       </div>
                     </div>
                   </div>
                   {connected ? (
                     <span className="badge ok">● Connected</span>
+                  ) : awaiting ? (
+                    <button className="btn" type="button" onClick={() => confirmLoggedIn(id)}>
+                      I&apos;ve logged in
+                    </button>
                   ) : (
                     <button className="btn primary" type="button" onClick={() => connect(id)}>
-                      Connect
+                      {errored ? "Retry" : "Connect"}
                     </button>
                   )}
                 </div>
               );
             })}
             <p className="hint">
-              CLI equivalent: <code>wingman login {selected[0] ?? "tinder"}</code>
+              Clicking Connect opens a secure browser login on the machine running your agent and
+              saves the session (the CLI equivalent is <code>wingman login {selected[0] ?? "tinder"}</code>).
+              Your password never touches our servers.
             </p>
           </>
         )}

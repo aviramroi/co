@@ -22,7 +22,7 @@ NEXT_PUBLIC_WINGMAN_API=http://127.0.0.1:4600 npm run dev
 | Route | Purpose |
 |---|---|
 | `/` | Landing page — value prop, the three channels, how it works |
-| `/signup` | Create an account (demo: stored locally in the browser) |
+| `/signup` | Create your operator account (bootstrap) |
 | `/login` | Log back in; resumes onboarding or jumps to the dashboard |
 | `/onboarding` | 6-step wizard → writes config to the agent and activates it |
 | `/dashboard` | Live view of the running agent: stats, approvals, conversations |
@@ -30,8 +30,8 @@ NEXT_PUBLIC_WINGMAN_API=http://127.0.0.1:4600 npm run dev
 ### Onboarding steps
 
 1. **Choose apps** — Tinder, Marketplace, Groups (any mix).
-2. **Connect & log in** — link each account (in production this saves a browser session, à la
-   `wingman login <app>`).
+2. **Connect & log in** — triggers a real browser login on the agent host (via
+   `POST /api/agent/channels/:p/login/start`) and polls until the session is saved.
 3. **Your voice** — name, texting style, hard boundaries.
 4. **Goals** — per-app: dating intent, items to buy/sell + prices, group searches.
 5. **Behavior** — human-like timing, approve-first, daily limits.
@@ -41,9 +41,27 @@ The wizard persists progress to `localStorage`, so users can leave and resume. A
 agent API; if the agent isn't running yet, setup is saved and the dashboard reconnects when it comes
 up.
 
-## Notes
+## Auth (production)
 
-- The account/auth here is a **front-end demo** (local storage) so the flow is fully clickable
-  without a backend user database. Swap `lib/store.ts` for real auth (NextAuth, Clerk, your own API)
-  in production.
-- All agent interaction goes through `lib/wingman.ts` against the control-panel API.
+Real auth via a BFF pattern:
+
+- Sign-up/login POST to same-origin route handlers (`app/api/auth/*`), which call the agent and set
+  an **httpOnly cookie** — the JWT never touches browser JS.
+- `middleware.ts` gates `/onboarding` and `/dashboard`; unauthenticated users are redirected to
+  `/login`.
+- All agent calls go through `app/api/agent/[...path]`, which injects the token from the cookie and
+  proxies to the agent. The agent URL (`WINGMAN_API`) is server-side only and never exposed.
+
+The first account created is the bootstrap operator; the agent closes further sign-ups unless
+`WINGMAN_ALLOW_SIGNUP=1`.
+
+## Deploy
+
+Standalone Docker image (`output: "standalone"`):
+
+```bash
+docker build -t wingman-web apps/wingman-web
+docker run -p 3000:3000 -e WINGMAN_API=http://agent:4600 wingman-web
+```
+
+Or run both apps together with `docker compose -f apps/wingman/docker-compose.yml up --build`.

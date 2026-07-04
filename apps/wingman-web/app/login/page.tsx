@@ -1,29 +1,45 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Nav } from "@/components/Nav";
-import { loadOnboarding, saveOnboarding, setSession } from "@/lib/store";
+import { login } from "@/lib/auth";
+import { loadOnboarding } from "@/lib/store";
 
 export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoginForm() {
   const router = useRouter();
+  const params = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
 
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return setError("Enter a valid email.");
     if (!password) return setError("Enter your password.");
 
-    const state = loadOnboarding();
-    if (!state.account) state.account = { email };
-    saveOnboarding(state);
-    setSession(email);
-    // Resume where they left off: dashboard if activated, else onboarding.
-    router.push(state.activated ? "/dashboard" : "/onboarding");
+    setBusy(true);
+    try {
+      await login(email, password);
+      const next = params.get("next");
+      const dest = next || (loadOnboarding().activated ? "/dashboard" : "/onboarding");
+      router.push(dest);
+    } catch (err) {
+      setError((err as Error).message || "Login failed.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -58,8 +74,8 @@ export default function LoginPage() {
 
           {error && <div className="error">{error}</div>}
 
-          <button className="btn primary lg" style={{ width: "100%", marginTop: 8 }} type="submit">
-            Log in →
+          <button className="btn primary lg" style={{ width: "100%", marginTop: 8 }} type="submit" disabled={busy}>
+            {busy ? "Signing in…" : "Log in →"}
           </button>
           <p className="hint" style={{ textAlign: "center", marginTop: 14 }}>
             New here? <Link href="/signup">Create an account</Link>

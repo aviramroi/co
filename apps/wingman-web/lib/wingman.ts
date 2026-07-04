@@ -2,9 +2,9 @@
 
 import type { AppId, OnboardingState } from "./types";
 
-/** Base URL of the running Wingman agent's control API. */
-export const WINGMAN_API =
-  process.env.NEXT_PUBLIC_WINGMAN_API ?? "http://127.0.0.1:4600";
+// All agent calls go through the same-origin BFF proxy (/api/agent/*), which
+// injects the operator's token server-side.
+const AGENT = "/api/agent";
 
 function splitList(s: string): string[] {
   return s
@@ -38,13 +38,7 @@ export function toAgentConfig(s: OnboardingState) {
     },
     marketplace: {
       buying: s.marketplace.buyQuery
-        ? [
-            {
-              query: s.marketplace.buyQuery,
-              maxPrice: Number(s.marketplace.maxPrice) || 0,
-              currency: "USD",
-            },
-          ]
+        ? [{ query: s.marketplace.buyQuery, maxPrice: Number(s.marketplace.maxPrice) || 0, currency: "USD" }]
         : [],
       selling: s.marketplace.sellTitle
         ? [
@@ -67,15 +61,43 @@ export function toAgentConfig(s: OnboardingState) {
   };
 }
 
-/** Push the built config to the agent. Returns true on success. */
 export async function activateAgent(s: OnboardingState): Promise<boolean> {
-  const res = await fetch(`${WINGMAN_API}/api/config`, {
+  const res = await fetch(`${AGENT}/config`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(toAgentConfig(s)),
   });
   return res.ok;
 }
+
+// --- channel login ---------------------------------------------------------
+
+export interface ChannelStatus {
+  platform: string;
+  connected: boolean;
+  state: "idle" | "awaiting" | "connected" | "error";
+  message?: string;
+}
+
+export async function startChannelLogin(platform: AppId): Promise<ChannelStatus | null> {
+  const r = await fetch(`${AGENT}/channels/${platform}/login/start`, { method: "POST" });
+  if (!r.ok) return null;
+  return r.json();
+}
+
+export async function completeChannelLogin(platform: AppId): Promise<ChannelStatus | null> {
+  const r = await fetch(`${AGENT}/channels/${platform}/login/complete`, { method: "POST" });
+  if (!r.ok) return null;
+  return r.json();
+}
+
+export async function channelStatus(platform: AppId): Promise<ChannelStatus | null> {
+  const r = await fetch(`${AGENT}/channels/${platform}/status`, { cache: "no-store" });
+  if (!r.ok) return null;
+  return r.json();
+}
+
+// --- dashboard state -------------------------------------------------------
 
 export interface AgentState {
   brain: string;
@@ -101,7 +123,7 @@ export interface AgentState {
 
 export async function fetchState(): Promise<AgentState | null> {
   try {
-    const res = await fetch(`${WINGMAN_API}/api/state`, { cache: "no-store" });
+    const res = await fetch(`${AGENT}/state`, { cache: "no-store" });
     if (!res.ok) return null;
     return (await res.json()) as AgentState;
   } catch {
@@ -110,7 +132,7 @@ export async function fetchState(): Promise<AgentState | null> {
 }
 
 export async function decideApproval(id: string, decision: "approve" | "reject", text?: string) {
-  await fetch(`${WINGMAN_API}/api/approvals/${id}`, {
+  await fetch(`${AGENT}/approvals/${id}`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ decision, text }),

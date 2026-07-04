@@ -1,9 +1,11 @@
 #!/usr/bin/env node
+import { createInterface } from "node:readline/promises";
 import { loadConfig } from "./config.js";
 import { createOrchestrator } from "./core/orchestrator.js";
 import { startServer } from "./server/server.js";
 import { BrowserSession } from "./channels/browser.js";
 import { LOGIN_URLS } from "./channels/live.js";
+import { AuthStore } from "./auth/authStore.js";
 import { createLogger } from "./logger.js";
 import type { Platform } from "./types.js";
 
@@ -17,6 +19,8 @@ async function main() {
       return runAgent();
     case "login":
       return login(args[0] as Platform | undefined);
+    case "useradd":
+      return useradd();
     case "status":
       return status();
     case "help":
@@ -64,6 +68,36 @@ async function login(platform?: Platform) {
   process.exit(0);
 }
 
+async function useradd() {
+  const cfg = loadConfig();
+  const auth = new AuthStore(cfg.stateDir);
+  let email = process.env.WINGMAN_ADMIN_EMAIL ?? "";
+  let password = process.env.WINGMAN_ADMIN_PASSWORD ?? "";
+
+  if (!email || !password) {
+    const rl = createInterface({ input: process.stdin, output: process.stdout });
+    if (!email) email = (await rl.question("Email: ")).trim();
+    if (!password) password = await rl.question("Password (min 8 chars): ");
+    rl.close();
+  }
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+    log.error("Invalid email.");
+    process.exit(1);
+  }
+  if (password.length < 8) {
+    log.error("Password must be at least 8 characters.");
+    process.exit(1);
+  }
+  try {
+    const user = auth.create(email, password);
+    log.info(`Created operator account ${user.email}. You can now log in via the web app.`);
+  } catch (err) {
+    log.error((err as Error).message);
+    process.exit(1);
+  }
+  process.exit(0);
+}
+
 async function status() {
   const cfg = loadConfig();
   const orchestrator = createOrchestrator(cfg);
@@ -84,6 +118,7 @@ function help() {
 
 Usage:
   wingman run                    Start the agent + control panel
+  wingman useradd                Create the operator account (email + password)
   wingman login <platform>       Save a browser login for live mode
                                  (platform: tinder | marketplace | groups)
   wingman status                 Print a quick status summary

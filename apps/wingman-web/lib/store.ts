@@ -3,9 +3,9 @@
 import { defaultOnboarding, type OnboardingState } from "./types";
 
 const KEY = "wingman.onboarding";
-const SESSION_KEY = "wingman.session";
 
-/** Local persistence for the demo account + onboarding progress. */
+// Onboarding form progress is non-sensitive UI state — fine to keep in
+// localStorage. Auth is handled separately via httpOnly cookies (see lib/auth).
 export function loadOnboarding(): OnboardingState {
   if (typeof window === "undefined") return defaultOnboarding();
   try {
@@ -20,22 +20,4 @@ export function loadOnboarding(): OnboardingState {
 export function saveOnboarding(state: OnboardingState) {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(KEY, JSON.stringify(state));
-}
-
-export function setSession(email: string) {
-  window.localStorage.setItem(SESSION_KEY, JSON.stringify({ email, at: Date.now() }));
-}
-
-export function getSession(): { email: string } | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = window.localStorage.getItem(SESSION_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-}
-
-export function clearSession() {
-  window.localStorage.removeItem(SESSION_KEY);
 }

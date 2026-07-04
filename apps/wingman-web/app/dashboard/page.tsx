@@ -3,8 +3,8 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { getSession, clearSession } from "@/lib/store";
-import { fetchState, decideApproval, WINGMAN_API, type AgentState } from "@/lib/wingman";
+import { logout } from "@/lib/auth";
+import { fetchState, decideApproval, type AgentState } from "@/lib/wingman";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -23,14 +23,11 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    if (!getSession()) {
-      router.replace("/login");
-      return;
-    }
+    // Route is gated by middleware; just start polling.
     refresh();
     const t = setInterval(refresh, 4000);
     return () => clearInterval(t);
-  }, [router, refresh]);
+  }, [refresh]);
 
   async function decide(id: string, decision: "approve" | "reject") {
     await decideApproval(id, decision, drafts[id]);
@@ -47,8 +44,8 @@ export default function DashboardPage() {
           <span className="tag">{state ? `brain: ${state.brain}` : offline ? "offline" : "…"}</span>
           <button
             className="btn ghost"
-            onClick={() => {
-              clearSession();
+            onClick={async () => {
+              await logout();
               router.push("/");
             }}
           >
@@ -62,9 +59,8 @@ export default function DashboardPage() {
 
         {offline && (
           <div className="banner">
-            Can&apos;t reach the agent at <code>{WINGMAN_API}</code>. Start it with{" "}
-            <code>wingman run</code> (in <code>apps/wingman</code>). This page reconnects
-            automatically.
+            Can&apos;t reach the agent. Start it with <code>wingman run</code> (in{" "}
+            <code>apps/wingman</code>). This page reconnects automatically.
           </div>
         )}
 

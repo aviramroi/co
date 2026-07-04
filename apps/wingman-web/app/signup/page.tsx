@@ -4,7 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Nav } from "@/components/Nav";
-import { loadOnboarding, saveOnboarding, setSession } from "@/lib/store";
+import { signup } from "@/lib/auth";
+import { loadOnboarding, saveOnboarding } from "@/lib/store";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -12,20 +13,27 @@ export default function SignupPage() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
 
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return setError("Enter a valid email.");
     if (password.length < 8) return setError("Password must be at least 8 characters.");
     if (password !== confirm) return setError("Passwords don't match.");
 
-    // Demo account: create a local session and seed onboarding.
-    const state = loadOnboarding();
-    state.account = { email };
-    saveOnboarding(state);
-    setSession(email);
-    router.push("/onboarding");
+    setBusy(true);
+    try {
+      await signup(email, password);
+      const state = loadOnboarding();
+      state.account = { email };
+      saveOnboarding(state);
+      router.push("/onboarding");
+    } catch (err) {
+      setError((err as Error).message || "Could not create the account.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -70,14 +78,11 @@ export default function SignupPage() {
 
           {error && <div className="error">{error}</div>}
 
-          <button className="btn primary lg" style={{ width: "100%", marginTop: 8 }} type="submit">
-            Create account →
+          <button className="btn primary lg" style={{ width: "100%", marginTop: 8 }} type="submit" disabled={busy}>
+            {busy ? "Creating…" : "Create account →"}
           </button>
           <p className="hint" style={{ textAlign: "center", marginTop: 14 }}>
             Already have one? <Link href="/login">Log in</Link>
-          </p>
-          <p className="hint" style={{ textAlign: "center" }}>
-            Demo only — credentials are stored locally in your browser.
           </p>
         </form>
       </div>

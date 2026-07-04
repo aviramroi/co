@@ -1,5 +1,6 @@
-import { readFileSync, writeFileSync, existsSync } from "node:fs";
-import { resolve } from "node:path";
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
+import { resolve, join } from "node:path";
+import { randomBytes } from "node:crypto";
 import { config as loadEnv } from "dotenv";
 import type { Platform } from "./types.js";
 
@@ -69,6 +70,17 @@ export interface WingmanConfig {
   stateDir: string;
   /** HTTP control panel. */
   server: { enabled: boolean; port: number; host: string };
+  /** Auth + API security. */
+  auth: {
+    /** HMAC secret for signing JWTs. MUST be set in production. */
+    secret: string;
+    /** Token lifetime in seconds. */
+    ttlSeconds: number;
+    /** Allow open account creation (else only the first/bootstrap account). */
+    allowSignup: boolean;
+    /** CORS allow-origin for the web app (exact origin, or "*" to disable check). */
+    webOrigin: string;
+  };
   llm: {
     model: string;
     /** effort for the brain: low|medium|high. Messaging is fine at medium. */
@@ -136,6 +148,7 @@ const DEFAULT_CONFIG: WingmanConfig = {
   pollIntervalMs: 15_000,
   stateDir: ".wingman",
   server: { enabled: true, port: 4600, host: "127.0.0.1" },
+  auth: { secret: "", ttlSeconds: 7 * 24 * 3600, allowSignup: false, webOrigin: "http://localhost:3000" },
   llm: { model: "claude-opus-4-8", effort: "medium" },
 };
 
@@ -193,7 +206,42 @@ export function loadConfig(): WingmanConfig {
     if (envMode) cfg.channels[platform].mode = envMode;
   }
 
+  // Auth + security.
+  if (process.env.WINGMAN_WEB_ORIGIN) cfg.auth.webOrigin = process.env.WINGMAN_WEB_ORIGIN;
+  if (process.env.WINGMAN_ALLOW_SIGNUP) cfg.auth.allowSignup = process.env.WINGMAN_ALLOW_SIGNUP === "1";
+  if (process.env.WINGMAN_AUTH_TTL) cfg.auth.ttlSeconds = Number(process.env.WINGMAN_AUTH_TTL);
+  cfg.auth.secret = resolveAuthSecret(cfg.stateDir);
+
   return cfg;
+}
+
+/**
+ * Resolve the JWT signing secret. In production `WINGMAN_AUTH_SECRET` is required.
+ * In dev, fall back to a per-install secret persisted under the state dir so
+ * tokens survive restarts (with a warning).
+ */
+function resolveAuthSecret(stateDir: string): string {
+  const fromEnv = process.env.WINGMAN_AUTH_SECRET;
+  if (fromEnv && fromEnv.length >= 16) return fromEnv;
+
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(
+      "WINGMAN_AUTH_SECRET must be set (>=16 chars) in production. " +
+        "Generate one with: openssl rand -hex 32",
+    );
+  }
+
+  const dir = resolve(process.cwd(), stateDir);
+  mkdirSync(dir, { recursive: true });
+  const file = join(dir, "secret.key");
+  if (existsSync(file)) return readFileSync(file, "utf8").trim();
+  const secret = randomBytes(32).toString("hex");
+  writeFileSync(file, secret, { mode: 0o600 });
+  console.warn(
+    "[config] WINGMAN_AUTH_SECRET not set — generated a dev secret at " +
+      `${file}. Set an explicit secret in production.`,
+  );
+  return secret;
 }
 
 /**

@@ -40,6 +40,14 @@ export class BrowserSession {
     return existsSync(this.statePath);
   }
 
+  get sessionPath(): string {
+    return this.statePath;
+  }
+
+  isOpen(): boolean {
+    return this.context !== null;
+  }
+
   private async playwright() {
     try {
       // Lazy, optional dependency. Non-literal specifier keeps TS from requiring
@@ -78,18 +86,46 @@ export class BrowserSession {
     return this.page;
   }
 
-  /** Open a login flow interactively and persist the resulting session. */
-  async login(startUrl: string): Promise<void> {
-    // Force headed so the human can complete login/2FA.
+  /**
+   * Open a headed browser at the login URL and leave it open for the human to
+   * complete login/2FA. Used by both the CLI and the API-driven login flow.
+   */
+  async openForLogin(startUrl: string): Promise<void> {
     this.headless = false;
     const page = await this.page_();
-    await page.goto(startUrl, { waitUntil: "domcontentloaded" });
-    log.info(
-      `[${this.platform}] Complete the login in the opened browser, then press Enter here…`,
-    );
-    await waitForEnter();
-    await this.context!.storageState({ path: this.statePath });
+    await page.goto(startUrl, { waitUntil: "domcontentloaded" }).catch(() => {});
+    log.info(`[${this.platform}] login browser opened → ${startUrl}`);
+  }
+
+  /**
+   * Heuristic: are we past the login wall? True once the current URL leaves the
+   * login/checkpoint path and at least one cookie exists for the domain.
+   */
+  async looksLoggedIn(): Promise<boolean> {
+    if (!this.context || !this.page) return false;
+    try {
+      const url: string = this.page.url();
+      const cookies: unknown[] = await this.context.cookies();
+      const onLoginWall = /login|checkpoint|signin|two_step|authenticate/i.test(url);
+      return cookies.length > 3 && !onLoginWall;
+    } catch {
+      return false;
+    }
+  }
+
+  /** Persist the current session cookies to disk. */
+  async saveSession(): Promise<void> {
+    if (!this.context) throw new Error("No open browser context to save.");
+    await this.context.storageState({ path: this.statePath });
     log.info(`[${this.platform}] session saved → ${this.statePath}`);
+  }
+
+  /** CLI flow: open, wait for Enter, save, close. */
+  async login(startUrl: string): Promise<void> {
+    await this.openForLogin(startUrl);
+    log.info(`[${this.platform}] Complete the login in the opened browser, then press Enter here…`);
+    await waitForEnter();
+    await this.saveSession();
     await this.close();
   }
 
