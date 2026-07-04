@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
+import "@fontsource-variable/inter";
+import "@fontsource-variable/space-grotesk";
 import "./globals.css";
+import "./premium.css";
 
 export const metadata: Metadata = {
-  title: "Wingman — your AI agent for dating & marketplace",
+  title: "Wingman — the AI that runs your conversations",
   description:
-    "One AI agent that manages your Tinder conversations, Facebook Marketplace deals, and group outreach — humanlike, on your terms, with you in the loop.",
+    "Wingman is the autonomous AI agent that runs your dating and Facebook Marketplace conversations for you — in your voice, with human-like timing, fully automated.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
