@@ -78,7 +78,7 @@ export function defaultOnboarding(): OnboardingState {
       queries: "",
       intent: "Find people selling what I want, and open a specific message referencing their post.",
     },
-    behavior: { humanLikeTiming: true, requireApproval: true, dailyLimit: 30 },
+    behavior: { humanLikeTiming: true, requireApproval: false, dailyLimit: 30 },
     activated: false,
   };
 }

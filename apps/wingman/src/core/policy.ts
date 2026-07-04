@@ -48,7 +48,11 @@ export class Policy {
     return true;
   }
 
-  /** Evaluate an outbound decision against limits and safety rules. */
+  /**
+   * Evaluate an outbound decision against limits and safety rules. Fully
+   * automated by default: replies auto-send. The scam/safety interlock is the
+   * one hard stop — it never lets the agent auto-send to a likely scam.
+   */
   evaluateOutbound(conv: Conversation, decision: AgentDecision): PolicyVerdict {
     const channel = this.cfg.channels[conv.platform];
 
@@ -61,30 +65,22 @@ export class Policy {
       };
     }
 
-    // Safety interlock: if the thread trips scam signals, force human review
-    // regardless of the channel's normal approval setting.
+    // Safety interlock: never auto-send when scam/off-platform-payment signals
+    // are present. If the channel opts into approvals, route it to a human;
+    // otherwise skip the send entirely (don't message a likely scammer).
     if (this.tripsScamSignals(conv, decision)) {
-      return {
-        allow: true,
-        requireApproval: true,
-        note: "Scam/safety signal present — forcing human approval.",
-      };
+      return channel.requireApproval
+        ? { allow: true, requireApproval: true, note: "Scam/safety signal — routed to review." }
+        : { allow: false, requireApproval: false, note: "Scam/safety signal — skipped in automated mode." };
     }
 
-    // Low-confidence drafts always get a human.
-    if (decision.confidence < 0.55) {
-      return {
-        allow: true,
-        requireApproval: true,
-        note: `Low confidence (${decision.confidence.toFixed(2)}) — routing to approval.`,
-      };
+    // Optional approval mode (off by default). When on, low-confidence drafts
+    // also go to a human.
+    if (channel.requireApproval) {
+      return { allow: true, requireApproval: true, note: "Approval mode: routed for review." };
     }
 
-    return {
-      allow: true,
-      requireApproval: channel.requireApproval,
-      note: channel.requireApproval ? "Channel requires approval." : "Auto-send permitted.",
-    };
+    return { allow: true, requireApproval: false, note: "Auto-send." };
   }
 
   private tripsScamSignals(conv: Conversation, decision: AgentDecision): boolean {

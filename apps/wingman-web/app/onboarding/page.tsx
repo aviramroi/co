@@ -450,19 +450,20 @@ export default function OnboardingPage() {
             </label>
             <label className="connect-row" style={{ cursor: "pointer" }}>
               <div className="left">
-                <span style={{ fontSize: 22 }}>✅</span>
+                <span style={{ fontSize: 22 }}>🤖</span>
                 <div>
-                  <div style={{ fontWeight: 600 }}>Approve every message before it sends</div>
+                  <div style={{ fontWeight: 600 }}>Fully automated</div>
                   <div className="hint" style={{ margin: 0 }}>
-                    Recommended. Turn off only for channels you fully trust.
+                    On by default — the agent replies on its own. Flip this off to review each
+                    message before it sends.
                   </div>
                 </div>
               </div>
               <input
                 type="checkbox"
-                checked={state.behavior.requireApproval}
+                checked={!state.behavior.requireApproval}
                 onChange={(e) =>
-                  update({ behavior: { ...state.behavior, requireApproval: e.target.checked } })
+                  update({ behavior: { ...state.behavior, requireApproval: !e.target.checked } })
                 }
               />
             </label>

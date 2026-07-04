@@ -34,9 +34,9 @@
     "intent": "Find people selling gear I want or looking for a climbing partner, and open a friendly, specific message referencing their post."
   },
   "channels": {
-    "tinder": { "mode": "mock", "dailyLimit": 40, "requireApproval": true },
-    "marketplace": { "mode": "mock", "dailyLimit": 40, "requireApproval": true },
-    "groups": { "mode": "mock", "dailyLimit": 15, "requireApproval": true }
+    "tinder": { "mode": "mock", "dailyLimit": 40, "requireApproval": false },
+    "marketplace": { "mode": "mock", "dailyLimit": 40, "requireApproval": false },
+    "groups": { "mode": "mock", "dailyLimit": 15, "requireApproval": false }
   },
   "pollIntervalMs": 15000,
   "stateDir": ".wingman",

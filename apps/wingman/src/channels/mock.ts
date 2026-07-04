@@ -49,6 +49,8 @@ export class MockChannel implements Channel {
 
   async searchLeads(): Promise<GroupLead[]> {
     if (this.platform !== "groups") return [];
+    // Nothing configured to search for → no synthetic leads.
+    if (this.cfg.groups.queries.length === 0 || this.cfg.groups.groups.length === 0) return [];
     // Surface a new lead occasionally.
     if (this.tick > 1 && Math.random() > 0.35) return [];
     const q = pick(this.cfg.groups.queries);

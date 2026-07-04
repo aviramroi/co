@@ -141,9 +141,9 @@ const DEFAULT_CONFIG: WingmanConfig = {
       "a friendly, specific message that references their post.",
   },
   channels: {
-    tinder: { mode: "mock", dailyLimit: 40, requireApproval: true },
-    marketplace: { mode: "mock", dailyLimit: 40, requireApproval: true },
-    groups: { mode: "mock", dailyLimit: 15, requireApproval: true },
+    tinder: { mode: "mock", dailyLimit: 40, requireApproval: false },
+    marketplace: { mode: "mock", dailyLimit: 40, requireApproval: false },
+    groups: { mode: "mock", dailyLimit: 15, requireApproval: false },
   },
   pollIntervalMs: 15_000,
   stateDir: ".wingman",

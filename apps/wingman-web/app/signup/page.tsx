@@ -1,14 +1,30 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Nav } from "@/components/Nav";
 import { signup } from "@/lib/auth";
 import { loadOnboarding, saveOnboarding } from "@/lib/store";
+import type { AppId } from "@/lib/types";
+
+const USE_TO_APPS: Record<string, AppId[]> = {
+  dating: ["tinder"],
+  marketplace: ["marketplace", "groups"],
+};
 
 export default function SignupPage() {
+  return (
+    <Suspense>
+      <SignupForm />
+    </Suspense>
+  );
+}
+
+function SignupForm() {
   const router = useRouter();
+  const params = useSearchParams();
+  const use = params.get("use") ?? "";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -27,6 +43,9 @@ export default function SignupPage() {
       await signup(email, password);
       const state = loadOnboarding();
       state.account = { email };
+      // Preselect apps based on which landing they came from.
+      const preselected = USE_TO_APPS[use];
+      if (preselected && state.selectedApps.length === 0) state.selectedApps = preselected;
       saveOnboarding(state);
       router.push("/onboarding");
     } catch (err) {
@@ -36,13 +55,20 @@ export default function SignupPage() {
     }
   }
 
+  const flavor =
+    use === "dating"
+      ? "Set up your dating wingman in a few minutes."
+      : use === "marketplace"
+        ? "Set up your deal-maker in a few minutes."
+        : "Start your agent in a few minutes.";
+
   return (
     <>
       <Nav cta={false} />
       <div className="center-wrap">
         <form className="panel" onSubmit={submit}>
           <h1>Create your account</h1>
-          <p className="muted">Start your agent in a few minutes.</p>
+          <p className="muted">{flavor}</p>
 
           <div className="field">
             <label>Email</label>
