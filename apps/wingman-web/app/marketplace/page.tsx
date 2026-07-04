@@ -4,7 +4,7 @@ import { PremiumNav } from "@/components/PremiumNav";
 import { ChatMock } from "@/components/ChatMock";
 import { Logo, IconTag, IconSearch, IconUsers, IconCheck, IconArrow } from "@/components/Icons";
 
-const theme = { "--acc": "#2d6bff", "--acc2": "#14c38e" } as CSSProperties;
+const theme = { "--acc": "#2f6b5c" } as CSSProperties;
 
 export default function MarketplaceLanding() {
   return (

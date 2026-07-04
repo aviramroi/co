@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "@fontsource-variable/inter";
-import "@fontsource-variable/space-grotesk";
+import "@fontsource-variable/fraunces/index.css";
+import "@fontsource-variable/fraunces/standard-italic.css";
 import "./globals.css";
 import "./premium.css";
 

@@ -4,8 +4,8 @@ import { PremiumNav } from "@/components/PremiumNav";
 import { ChatMock } from "@/components/ChatMock";
 import { Logo, IconHeart, IconCart, IconWave, IconClock, IconSliders, IconArrow } from "@/components/Icons";
 
-const dating = { "--acc": "#ff3d71", "--acc2": "#ff8a3d" } as CSSProperties;
-const market = { "--acc": "#2d6bff", "--acc2": "#14c38e" } as CSSProperties;
+const dating = { "--acc": "#9e4a5c" } as CSSProperties;
+const market = { "--acc": "#2f6b5c" } as CSSProperties;
 
 export default function Home() {
   return (

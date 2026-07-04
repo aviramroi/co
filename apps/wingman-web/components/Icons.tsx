@@ -6,7 +6,7 @@ const base = (p: SVGProps<SVGSVGElement>) => ({
   viewBox: "0 0 24 24",
   fill: "none",
   stroke: "currentColor",
-  strokeWidth: 2.1,
+  strokeWidth: 1.6,
   strokeLinecap: "round" as const,
   strokeLinejoin: "round" as const,
   ...p,
@@ -79,7 +79,7 @@ export const IconSpark = (p: SVGProps<SVGSVGElement>) => (
 
 export const IconHeart = (p: SVGProps<SVGSVGElement>) => (
   <svg {...base(p)}>
-    <path d="M12 20s-7-4.3-7-9.4A4.1 4.1 0 0 1 12 8a4.1 4.1 0 0 1 7 2.6C19 15.7 12 20 12 20Z" fill="currentColor" stroke="none" />
+    <path d="M12 19.5C6.5 16 4.5 12.6 4.5 9.9A3.9 3.9 0 0 1 12 8.1a3.9 3.9 0 0 1 7.5 1.8c0 2.7-2 6.1-7.5 9.6Z" />
   </svg>
 );
 

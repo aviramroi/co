@@ -4,7 +4,7 @@ import { PremiumNav } from "@/components/PremiumNav";
 import { ChatMock } from "@/components/ChatMock";
 import { Logo, IconChat, IconClock, IconShield, IconCheck, IconArrow } from "@/components/Icons";
 
-const theme = { "--acc": "#ff3d71", "--acc2": "#ff8a3d" } as CSSProperties;
+const theme = { "--acc": "#9e4a5c" } as CSSProperties;
 
 export default function DatingLanding() {
   return (
