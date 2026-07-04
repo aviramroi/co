@@ -1,4 +1,11 @@
-# Wingman agent — deployable container.
+# Wingman agent — production image with Playwright + Chromium bundled, so live
+# channel automation runs on a headless server out of the box. Logins are
+# captured locally and imported (`wingman import-session` / the web upload), so
+# the server never needs a display.
+#
+# Mock-only? You can swap the runtime base for `node:22-slim` for a much smaller
+# image (Playwright is an optional dependency and is lazily imported).
+
 FROM node:22-slim AS build
 WORKDIR /app
 COPY package.json ./
@@ -7,20 +14,19 @@ COPY tsconfig.json ./
 COPY src ./src
 RUN npm run build
 
-FROM node:22-slim AS runtime
+FROM mcr.microsoft.com/playwright:v1.49.0-jammy AS runtime
 WORKDIR /app
-ENV NODE_ENV=production
-# Install prod deps only. Playwright is optional; add it in the image only if
-# you run channels in `live` mode (and then `npx playwright install chromium`).
+ENV NODE_ENV=production \
+    WINGMAN_HOST=0.0.0.0 \
+    PLAYWRIGHT_BROWSERS_PATH=/ms-playwright \
+    PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
+# Prod deps incl. the optional `playwright` package; browsers already in the base.
 COPY package.json ./
-RUN npm install --omit=dev --omit=optional --no-audit --no-fund
+RUN npm install --omit=dev --no-audit --no-fund
 COPY --from=build /app/dist ./dist
 
-# Control panel port
 EXPOSE 4600
-ENV WINGMAN_HOST=0.0.0.0
-
-# State (conversations, approvals, sessions) — mount a volume to persist it.
+# State (accounts, conversations, saved sessions) — mount a volume to persist it.
 VOLUME ["/app/.wingman"]
 
 CMD ["node", "dist/cli.js", "run"]

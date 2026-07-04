@@ -10,6 +10,7 @@ import {
   startChannelLogin,
   completeChannelLogin,
   channelStatus,
+  importChannelSession,
 } from "@/lib/wingman";
 
 type ChanUi = { state: "idle" | "awaiting" | "connected" | "error"; message?: string };
@@ -104,6 +105,17 @@ export default function OnboardingPage() {
     else setChan((c) => ({ ...c, [id]: { state: "error", message: st?.message ?? "Not logged in yet." } }));
   }
 
+  async function uploadSession(id: AppId, file: File) {
+    try {
+      const parsed = JSON.parse(await file.text());
+      const st = await importChannelSession(id, parsed);
+      if (st && (st.connected || st.state === "connected")) markConnected(id);
+      else setChan((c) => ({ ...c, [id]: { state: "error", message: st?.message ?? "Invalid session file." } }));
+    } catch {
+      setChan((c) => ({ ...c, [id]: { state: "error", message: "Couldn't read that file as JSON." } }));
+    }
+  }
+
   function canAdvance(): boolean {
     setError("");
     if (step === 0 && state!.selectedApps.length === 0) {
@@ -194,8 +206,8 @@ export default function OnboardingPage() {
         {step === 1 && (
           <>
             <p className="muted">
-              Link each account. In production this opens a secure browser login and saves the
-              session so your agent stays signed in — your password never touches our servers.
+              Link each account. Connecting opens a secure browser login and saves the session so
+              your agent stays signed in — your password never touches our servers.
             </p>
             {selected.map((id) => {
               const app = APPS.find((a) => a.id === id)!;
@@ -227,17 +239,33 @@ export default function OnboardingPage() {
                       I&apos;ve logged in
                     </button>
                   ) : (
-                    <button className="btn primary" type="button" onClick={() => connect(id)}>
-                      {errored ? "Retry" : "Connect"}
-                    </button>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                      <button className="btn primary" type="button" onClick={() => connect(id)}>
+                        {errored ? "Retry" : "Connect"}
+                      </button>
+                      <label className="btn ghost" style={{ cursor: "pointer" }} title="Upload a saved session (for headless servers)">
+                        Upload session
+                        <input
+                          type="file"
+                          accept="application/json,.json"
+                          style={{ display: "none" }}
+                          onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            if (f) uploadSession(id, f);
+                            e.target.value = "";
+                          }}
+                        />
+                      </label>
+                    </div>
                   )}
                 </div>
               );
             })}
             <p className="hint">
-              Clicking Connect opens a secure browser login on the machine running your agent and
-              saves the session (the CLI equivalent is <code>wingman login {selected[0] ?? "tinder"}</code>).
-              Your password never touches our servers.
+              <b>Connect</b> opens a browser login on the machine running your agent and saves the
+              session — your password never touches our servers. Running the agent on a headless
+              server? Capture the session on your laptop (<code>wingman login {selected[0] ?? "tinder"}</code>)
+              and <b>Upload session</b> the resulting file.
             </p>
           </>
         )}

@@ -90,8 +90,8 @@ export default function LandingPage() {
 
       <footer className="footer">
         <div className="container between">
-          <span>🪽 Wingman · a demo AI agent built on OpenClaw</span>
-          <span>Use responsibly and within each platform&apos;s terms.</span>
+          <span>🪽 Wingman · your AI agent for dating &amp; marketplace</span>
+          <span>You&apos;re always in control — approve drafts, set boundaries, pause anytime.</span>
         </div>
       </footer>
     </>

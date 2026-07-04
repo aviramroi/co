@@ -3,7 +3,14 @@
 // (Only imported by files under app/api/**, which always run on the server.)
 import type { NextRequest } from "next/server";
 
-export const AGENT_URL = process.env.WINGMAN_API ?? "http://127.0.0.1:4600";
+/** Agent base URL. Accepts a scheme-less `host:port` (some PaaS service-discovery
+ *  values omit the scheme) and defaults it to http:// for internal networking. */
+function resolveAgentUrl(): string {
+  const raw = process.env.WINGMAN_API ?? "http://127.0.0.1:4600";
+  return /^https?:\/\//.test(raw) ? raw : `http://${raw}`;
+}
+
+export const AGENT_URL = resolveAgentUrl();
 export const COOKIE = "wm_token";
 
 export function cookieOptions(maxAge: number) {

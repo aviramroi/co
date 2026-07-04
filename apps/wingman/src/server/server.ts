@@ -107,6 +107,16 @@ export function startServer(deps: ServerDeps) {
         if (!PLATFORMS.includes(platform)) return json(res, 404, { error: "unknown platform" });
         return json(res, 200, { platform, ...logins.status(platform) });
       }
+      const sessionMatch = path.match(/^\/api\/channels\/(\w+)\/session$/);
+      if (method === "POST" && sessionMatch) {
+        const platform = sessionMatch[1] as Platform;
+        if (!PLATFORMS.includes(platform)) return json(res, 404, { error: "unknown platform" });
+        const body = await readJson(req);
+        const state = body?.storageState ?? body;
+        const result = logins.importSession(platform, state);
+        const status = result.state === "error" ? 400 : 200;
+        return json(res, status, { platform, ...result });
+      }
 
       return json(res, 404, { error: "not found" });
     } catch (err) {

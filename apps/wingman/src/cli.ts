@@ -19,6 +19,8 @@ async function main() {
       return runAgent();
     case "login":
       return login(args[0] as Platform | undefined);
+    case "import-session":
+      return importSession(args[0] as Platform | undefined, args[1]);
     case "useradd":
       return useradd();
     case "status":
@@ -65,6 +67,31 @@ async function login(platform?: Platform) {
   const session = new BrowserSession(platform, cfg.stateDir, false);
   await session.login(LOGIN_URLS[platform]);
   log.info(`Saved ${platform} session. You can now set its channel mode to "live".`);
+  process.exit(0);
+}
+
+async function importSession(platform?: Platform, file?: string) {
+  if (!platform || !["tinder", "marketplace", "groups"].includes(platform) || !file) {
+    log.error("Usage: wingman import-session <tinder|marketplace|groups> <storageState.json>");
+    process.exit(1);
+  }
+  const cfg = loadConfig();
+  const { readFileSync } = await import("node:fs");
+  let state: unknown;
+  try {
+    state = JSON.parse(readFileSync(file, "utf8"));
+  } catch (err) {
+    log.error(`Could not read ${file}: ${(err as Error).message}`);
+    process.exit(1);
+  }
+  const session = new BrowserSession(platform, cfg.stateDir);
+  try {
+    session.writeSessionState(state);
+    log.info(`Imported ${platform} session. Set its channel mode to "live" to use it.`);
+  } catch (err) {
+    log.error((err as Error).message);
+    process.exit(1);
+  }
   process.exit(0);
 }
 
@@ -121,6 +148,8 @@ Usage:
   wingman useradd                Create the operator account (email + password)
   wingman login <platform>       Save a browser login for live mode
                                  (platform: tinder | marketplace | groups)
+  wingman import-session <p> <f> Import a Playwright storageState JSON captured
+                                 elsewhere (headless servers — no display needed)
   wingman status                 Print a quick status summary
   wingman help                   Show this help
 

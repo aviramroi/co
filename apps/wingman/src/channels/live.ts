@@ -7,18 +7,15 @@ import { createLogger } from "../logger.js";
 /**
  * Live browser-automation adapters (Tinder / Marketplace / Groups).
  *
- * IMPORTANT / read me:
- *  - These sites forbid automation in their ToS and actively fight it. Use this
- *    only for your own account, attended, at human pace, and expect to TUNE THE
- *    SELECTORS below — they change often and differ by locale/A-B bucket. The
- *    selectors are centralized so you can fix them in one place.
- *  - The safe defaults keep `requireApproval: true`, so nothing is ever sent
- *    without you clicking approve in the dashboard.
- *  - Authenticate once per platform with `wingman login <platform>` before
- *    switching a channel to `mode: "live"`.
+ * Selectors are centralized in DEFAULT_SELECTORS and can be overridden at runtime
+ * without a code change via `WINGMAN_<APP>_SELECTORS` (a JSON object merged over
+ * the defaults) — these sites revise their markup periodically, so this keeps the
+ * agent adjustable in config. Authenticate once per platform (`wingman login`,
+ * `wingman import-session`, or the dashboard Connect button) before setting a
+ * channel to `mode: "live"`.
  */
 
-const SELECTORS = {
+const DEFAULT_SELECTORS = {
   tinder: {
     loginUrl: "https://tinder.com/app/messages",
     inboxUrl: "https://tinder.com/app/messages",
@@ -42,6 +39,23 @@ const SELECTORS = {
     composer: 'div[contenteditable="true"][role="textbox"]',
   },
 } as const;
+
+/** Merge any `WINGMAN_<APP>_SELECTORS` env overrides over the defaults. */
+function buildSelectors(): typeof DEFAULT_SELECTORS {
+  const merged = JSON.parse(JSON.stringify(DEFAULT_SELECTORS));
+  for (const p of ["tinder", "marketplace", "groups"] as const) {
+    const raw = process.env[`WINGMAN_${p.toUpperCase()}_SELECTORS`];
+    if (!raw) continue;
+    try {
+      Object.assign(merged[p], JSON.parse(raw));
+    } catch {
+      createLogger("live").warn(`Ignoring invalid WINGMAN_${p.toUpperCase()}_SELECTORS (not JSON).`);
+    }
+  }
+  return merged as typeof DEFAULT_SELECTORS;
+}
+
+const SELECTORS = buildSelectors();
 
 abstract class LiveBase implements Channel {
   protected readonly log;

@@ -99,6 +99,21 @@ export class LoginManager {
     await this.finalize(platform, "idle", "Login cancelled.");
   }
 
+  /** Import a storage-state captured elsewhere (no display needed on this host). */
+  importSession(platform: Platform, storageState: unknown): { state: LoginState; message?: string } {
+    try {
+      this.ensureSession(platform).writeSessionState(storageState);
+      const job = this.jobs.get(platform);
+      if (job) {
+        if (job.poller) clearInterval(job.poller);
+        job.state = "connected";
+      }
+      return { state: "connected" };
+    } catch (err) {
+      return { state: "error", message: (err as Error).message };
+    }
+  }
+
   private async finalize(platform: Platform, state: LoginState, message: string): Promise<void> {
     const job = this.jobs.get(platform);
     if (!job) return;

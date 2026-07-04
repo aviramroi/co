@@ -1,0 +1,62 @@
+# Wingman — production deployment with automatic HTTPS.
+#
+# Only Caddy is exposed to the internet (ports 80/443); the web app and agent
+# stay on the internal network. Caddy terminates TLS and proxies to the web app,
+# which proxies to the agent.
+#
+# Usage:
+#   export WINGMAN_DOMAIN=wingman.example.com
+#   export ACME_EMAIL=you@example.com
+#   export WINGMAN_AUTH_SECRET=$(openssl rand -hex 32)
+#   export ANTHROPIC_API_KEY=sk-ant-...            # optional
+#   docker compose -f apps/wingman/deploy/docker-compose.prod.yml up --build -d
+#
+# Then open https://$WINGMAN_DOMAIN and create your operator account.
+services:
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      WINGMAN_DOMAIN: ${WINGMAN_DOMAIN:?set WINGMAN_DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL:?set ACME_EMAIL}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - web
+
+  web:
+    build:
+      context: ../../wingman-web
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      WINGMAN_API: http://agent:4600
+    expose:
+      - "3000"
+    depends_on:
+      - agent
+
+  agent:
+    build:
+      context: ..
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      WINGMAN_HOST: 0.0.0.0
+      WINGMAN_AUTH_SECRET: ${WINGMAN_AUTH_SECRET:?set WINGMAN_AUTH_SECRET (openssl rand -hex 32)}
+      WINGMAN_WEB_ORIGIN: https://${WINGMAN_DOMAIN}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    expose:
+      - "4600"
+    volumes:
+      - wingman-state:/app/.wingman
+
+volumes:
+  wingman-state:
+  caddy-data:
+  caddy-config:

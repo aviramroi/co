@@ -97,6 +97,19 @@ export async function channelStatus(platform: AppId): Promise<ChannelStatus | nu
   return r.json();
 }
 
+/** Import a Playwright storageState captured elsewhere (no display on the host). */
+export async function importChannelSession(
+  platform: AppId,
+  storageState: unknown,
+): Promise<ChannelStatus | null> {
+  const r = await fetch(`${AGENT}/channels/${platform}/session`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ storageState }),
+  });
+  return r.ok ? r.json() : (r.json().catch(() => null) as Promise<ChannelStatus | null>);
+}
+
 // --- dashboard state -------------------------------------------------------
 
 export interface AgentState {

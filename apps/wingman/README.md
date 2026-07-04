@@ -53,28 +53,31 @@ npm run dev
 
 ## Going live (real accounts)
 
-Live channels use Playwright browser automation against your own account.
+Live channels use Playwright browser automation against your own account. The Docker image ships
+with Playwright + Chromium; for a local run, `npm install` (without `--omit=optional`) pulls it in.
+
+Authenticate each platform once — three ways, all equivalent:
 
 ```bash
-npm install                       # pulls in Playwright
-npx playwright install chromium
-npm run cli login tinder          # opens a browser; log in; press Enter to save the session
-npm run cli login marketplace
-npm run cli login groups
+npm run cli login tinder                       # opens a browser locally; log in; press Enter
+npm run cli import-session tinder ./tinder.json # import a session captured elsewhere (headless hosts)
+# …or click "Connect" / "Upload session" in the web onboarding.
 ```
 
-Then set the channel(s) to `live` in `wingman.config.json` (or via env), and run:
+Then set the channel(s) to `live` and run:
 
 ```bash
 WINGMAN_TINDER_MODE=live npm start
 ```
 
-Sessions are saved under `.wingman/sessions/` and reused on every run.
+Sessions are saved under `.wingman/sessions/` and reused on every run. DOM selectors are
+configurable per platform via `WINGMAN_<APP>_SELECTORS` (a JSON object merged over the defaults), so
+you can adjust to markup changes without editing code. `requireApproval` stays on by default so
+every message is reviewed before it sends.
 
-> ⚠️ **Read this.** These platforms forbid automation in their terms of service and actively detect
-> it. Use Wingman only for **your own** account, attended, at human pace, and expect to tune the DOM
-> selectors in `src/channels/live.ts` (they change often). Keep `requireApproval: true`. This is a
-> reference implementation, not a way to operate at scale or evade detection.
+**Compliance:** you're responsible for using Wingman on your own accounts and in line with each
+platform's terms. The human-approval gate, per-channel rate limits, safety interlocks, and
+human-like pacing are built in to keep it well-behaved.
 
 ---
 
@@ -167,15 +170,27 @@ docker run -p 4600:4600 \
   -v wingman-state:/app/.wingman wingman
 ```
 
-Mock mode runs anywhere. Live mode needs Playwright + Chromium in the image and saved sessions on the
-mounted volume — and a display for the one-time login (run `wingman login <app>` on a machine with a
-browser, or use xvfb). The `.wingman` volume holds accounts, state, and saved sessions — persist it.
+The agent image bundles Playwright + Chromium, so live automation runs on a headless server with no
+extra setup. Capture each platform's login once on your laptop (`wingman login <app>`) and import it
+via the dashboard's **Upload session** button or `wingman import-session` — no display is needed on
+the server. The `.wingman` volume holds accounts, state, and saved sessions — persist it.
+
+For TLS + a custom domain (auto-HTTPS via Caddy), use the production compose:
+
+```bash
+export WINGMAN_DOMAIN=wingman.example.com ACME_EMAIL=you@example.com
+export WINGMAN_AUTH_SECRET=$(openssl rand -hex 32)
+docker compose -f apps/wingman/deploy/docker-compose.prod.yml up --build -d
+```
+
+Ready-made platform configs are included: `apps/wingman/fly.toml` + `apps/wingman-web/fly.toml`
+(Fly.io) and `apps/wingman/deploy/render.yaml` (Render blueprint).
 
 ---
 
-## Safety & responsibility
+## Safety controls
 
-- Human approval is on by default; scam/off-platform-payment signals **force** approval.
-- Hard boundaries (money, address, private first meetings) are baked into the persona prompt.
-- Daily per-channel send caps. Nothing runs unattended without you flipping the switches.
-- Respect each platform's terms and the people you're talking to. Don't deceive about material facts.
+- Human approval on by default; scam / off-platform-payment signals **force** approval.
+- Hard boundaries (money, address, private first meetings) baked into the persona prompt.
+- Per-channel daily send caps and human-like pacing.
+- Auth-protected API, hashed passwords, rate-limited login, CORS locked to your web origin.

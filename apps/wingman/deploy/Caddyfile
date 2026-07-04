@@ -1,0 +1,14 @@
+# Caddy reverse proxy with automatic HTTPS (Let's Encrypt).
+# Set WINGMAN_DOMAIN and ACME_EMAIL in the environment. Caddy provisions and
+# renews the certificate automatically once the domain's DNS points here and
+# ports 80/443 are reachable.
+
+{
+	email {$ACME_EMAIL}
+}
+
+{$WINGMAN_DOMAIN} {
+	encode zstd gzip
+	# Only the web app is public; it proxies to the agent over the internal network.
+	reverse_proxy web:3000
+}

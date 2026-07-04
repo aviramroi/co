@@ -1,4 +1,4 @@
-import { mkdirSync, existsSync } from "node:fs";
+import { mkdirSync, existsSync, writeFileSync } from "node:fs";
 import { resolve, join } from "node:path";
 import type { Platform } from "../types.js";
 import { createLogger } from "../logger.js";
@@ -120,6 +120,21 @@ export class BrowserSession {
     log.info(`[${this.platform}] session saved → ${this.statePath}`);
   }
 
+  /**
+   * Import a Playwright storage-state captured elsewhere (e.g. logged in on a
+   * laptop, uploaded to a headless server). Validates the basic shape and writes
+   * it to the session file. Removes any need for a display on the agent host.
+   */
+  writeSessionState(state: unknown): void {
+    if (!isStorageState(state)) {
+      throw new Error(
+        "Invalid session file. Expected Playwright storageState JSON with `cookies` and `origins`.",
+      );
+    }
+    writeFileSync(this.statePath, JSON.stringify(state), { mode: 0o600 });
+    log.info(`[${this.platform}] session imported → ${this.statePath}`);
+  }
+
   /** CLI flow: open, wait for Enter, save, close. */
   async login(startUrl: string): Promise<void> {
     await this.openForLogin(startUrl);
@@ -145,6 +160,12 @@ export async function typeLikeHuman(page: Page, selector: string, text: string):
   for (const ch of text) {
     await el.type(ch, { delay: 40 + Math.floor(Math.random() * 120) });
   }
+}
+
+function isStorageState(state: unknown): state is { cookies: unknown[]; origins: unknown[] } {
+  if (typeof state !== "object" || state === null) return false;
+  const s = state as Record<string, unknown>;
+  return Array.isArray(s.cookies) && Array.isArray(s.origins);
 }
 
 function waitForEnter(): Promise<void> {
