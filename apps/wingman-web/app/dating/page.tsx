@@ -2,19 +2,15 @@ import Link from "next/link";
 import type { CSSProperties } from "react";
 import { PremiumNav } from "@/components/PremiumNav";
 import { ChatMock } from "@/components/ChatMock";
+import { Logo, IconChat, IconClock, IconShield, IconCheck, IconArrow } from "@/components/Icons";
 
-const theme = {
-  "--acc": "#ff4d7d",
-  "--acc2": "#ff8a5b",
-  "--acc-ink": "#ffb0c4",
-} as CSSProperties;
+const theme = { "--acc": "#ff3d71", "--acc2": "#ff8a3d" } as CSSProperties;
 
 export default function DatingLanding() {
   return (
     <div className="lp" style={theme}>
       <PremiumNav getStartedHref="/signup?use=dating" />
 
-      {/* Hero */}
       <div className="lp-wrap lp-hero">
         <span className="lp-eyebrow">
           <span className="dot" /> For Tinder, Hinge &amp; Bumble
@@ -28,15 +24,13 @@ export default function DatingLanding() {
         </p>
         <div className="lp-cta">
           <Link href="/signup?use=dating" className="lp-btn primary lg">
-            Get my dating wingman →
+            Get my dating wingman <IconArrow width={18} height={18} />
           </Link>
-          <Link href="/marketplace" className="lp-btn ghost lg">
+          <Link href="/marketplace" className="lp-btn lg">
             I&apos;m here to buy &amp; sell
           </Link>
         </div>
-        <div className="lp-cta-note">
-          <span>✦ Free to start · your voice · pause anytime</span>
-        </div>
+        <div className="lp-cta-note">Free to start · your voice · pause anytime</div>
 
         <div className="lp-hero-visual">
           <ChatMock
@@ -53,19 +47,17 @@ export default function DatingLanding() {
           />
         </div>
 
-        {/* Logo cloud */}
         <div className="lp-cloud">
           <div className="lp-cloud-label">Runs on the apps you already use</div>
           <div className="lp-cloud-row">
-            <span className="lp-logo">🔥 Tinder</span>
-            <span className="lp-logo">💜 Hinge</span>
-            <span className="lp-logo">🟡 Bumble</span>
-            <span className="lp-logo">💬 Messenger</span>
+            <span className="lp-logo">Tinder</span>
+            <span className="lp-logo">Hinge</span>
+            <span className="lp-logo">Bumble</span>
+            <span className="lp-logo">Messenger</span>
           </div>
         </div>
       </div>
 
-      {/* Stats */}
       <div className="lp-wrap lp-section" style={{ paddingTop: 40 }}>
         <div className="lp-stats">
           {[
@@ -82,10 +74,9 @@ export default function DatingLanding() {
         </div>
       </div>
 
-      {/* Features */}
       <div className="lp-wrap lp-section" style={{ paddingTop: 20 }}>
         <div className="lp-head-center">
-          <div className="lp-kicker">Why it works</div>
+          <span className="lp-kicker">Why it works</span>
           <h2 className="lp-h2">A wingman that actually sounds like you</h2>
           <p className="lp-lead">
             Not a canned auto-responder. It learns your voice, reads the room, and knows when a
@@ -94,28 +85,27 @@ export default function DatingLanding() {
         </div>
         <div className="lp-features">
           <div className="lp-card">
-            <div className="lp-ic">💬</div>
+            <div className="lp-ic"><IconChat /></div>
             <h3>Opens like you would</h3>
             <p>Picks a real detail from their profile and starts a conversation worth having — never a copy-paste line.</p>
           </div>
           <div className="lp-card">
-            <div className="lp-ic">⏳</div>
+            <div className="lp-ic"><IconClock /></div>
             <h3>Human timing</h3>
             <p>Decides when to reply, not just what to say. Quick banter here, a cool few hours there. Never robotic, never thirsty.</p>
           </div>
           <div className="lp-card">
-            <div className="lp-ic">🛡️</div>
+            <div className="lp-ic"><IconShield /></div>
             <h3>Safe by design</h3>
             <p>Holds your boundaries, keeps first meetings public, and flags anything sketchy straight to you.</p>
           </div>
         </div>
       </div>
 
-      {/* Split */}
       <div className="lp-wrap lp-section" style={{ paddingTop: 20 }}>
         <div className="lp-split">
           <div>
-            <div className="lp-kicker">On autopilot</div>
+            <span className="lp-kicker">On autopilot</span>
             <h2>From match to date — without lifting a thumb.</h2>
             <p>
               Set your vibe and your goals once. Wingman handles the small talk, keeps the momentum,
@@ -129,7 +119,7 @@ export default function DatingLanding() {
                 "Hands off to you the moment you want to jump in",
               ].map((t) => (
                 <div className="lp-tick" key={t}>
-                  <span className="ck">✓</span> {t}
+                  <span className="ck"><IconCheck /></span> {t}
                 </div>
               ))}
             </div>
@@ -151,10 +141,9 @@ export default function DatingLanding() {
         </div>
       </div>
 
-      {/* Steps */}
       <div className="lp-wrap lp-section" style={{ paddingTop: 20 }}>
         <div className="lp-head-center">
-          <div className="lp-kicker">Three minutes to set up</div>
+          <span className="lp-kicker">Three minutes to set up</span>
           <h2 className="lp-h2">Wake up to conversations that moved forward</h2>
         </div>
         <div className="lp-steps">
@@ -172,10 +161,9 @@ export default function DatingLanding() {
         </div>
       </div>
 
-      {/* Testimonials */}
       <div className="lp-wrap lp-section" style={{ paddingTop: 20 }}>
         <div className="lp-head-center">
-          <div className="lp-kicker">Loved by busy people</div>
+          <span className="lp-kicker">Loved by busy people</span>
           <h2 className="lp-h2">More dates. Way less typing.</h2>
         </div>
         <div className="lp-quotes">
@@ -185,9 +173,10 @@ export default function DatingLanding() {
             ["Set it up on a Sunday, forgot about it, woke up to a coffee date already planned.", "Dana", "Nurse"],
           ].map(([q, n, r]) => (
             <div className="lp-quote" key={n}>
+              <div className="stars">★★★★★</div>
               <p>“{q}”</p>
               <div className="who">
-                <span className="qa" />
+                <span className="qa">{(n as string)[0]}</span>
                 <div>
                   <div className="qn">{n}</div>
                   <div className="qr">{r}</div>
@@ -198,13 +187,12 @@ export default function DatingLanding() {
         </div>
       </div>
 
-      {/* CTA */}
       <div className="lp-wrap lp-section" style={{ paddingTop: 0 }}>
         <div className="lp-cta-band">
           <h2>Your wingman never sleeps on a match.</h2>
           <p>Fully automated by default — with boundaries you set and a pause button one tap away.</p>
-          <Link href="/signup?use=dating" className="lp-btn primary lg">
-            Start for free →
+          <Link href="/signup?use=dating" className="lp-btn lg">
+            Start for free <IconArrow width={18} height={18} />
           </Link>
         </div>
       </div>
@@ -212,7 +200,7 @@ export default function DatingLanding() {
       <footer className="lp-footer">
         <div className="lp-wrap lp-footer-grid">
           <span className="lp-brand">
-            <span className="mark">🪽</span> Wingman
+            <Logo size={30} /> Wingman
           </span>
           <div className="lp-foot-links">
             <Link href="/dating">Dating</Link>

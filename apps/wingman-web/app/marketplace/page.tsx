@@ -2,19 +2,15 @@ import Link from "next/link";
 import type { CSSProperties } from "react";
 import { PremiumNav } from "@/components/PremiumNav";
 import { ChatMock } from "@/components/ChatMock";
+import { Logo, IconTag, IconSearch, IconUsers, IconCheck, IconArrow } from "@/components/Icons";
 
-const theme = {
-  "--acc": "#2f9bff",
-  "--acc2": "#37d6a0",
-  "--acc-ink": "#a9d8ff",
-} as CSSProperties;
+const theme = { "--acc": "#2d6bff", "--acc2": "#14c38e" } as CSSProperties;
 
 export default function MarketplaceLanding() {
   return (
     <div className="lp" style={theme}>
       <PremiumNav getStartedHref="/signup?use=marketplace" />
 
-      {/* Hero */}
       <div className="lp-wrap lp-hero">
         <span className="lp-eyebrow">
           <span className="dot" /> For buyers &amp; sellers · Marketplace + Groups
@@ -28,15 +24,13 @@ export default function MarketplaceLanding() {
         </p>
         <div className="lp-cta">
           <Link href="/signup?use=marketplace" className="lp-btn primary lg">
-            Get my deal-maker →
+            Get my deal-maker <IconArrow width={18} height={18} />
           </Link>
-          <Link href="/dating" className="lp-btn ghost lg">
+          <Link href="/dating" className="lp-btn lg">
             I&apos;m here to date
           </Link>
         </div>
-        <div className="lp-cta-note">
-          <span>✦ Free to start · you set the floor · it does the haggling</span>
-        </div>
+        <div className="lp-cta-note">Free to start · you set the floor · it does the haggling</div>
 
         <div className="lp-hero-visual">
           <ChatMock
@@ -56,15 +50,14 @@ export default function MarketplaceLanding() {
         <div className="lp-cloud">
           <div className="lp-cloud-label">Works across Facebook</div>
           <div className="lp-cloud-row">
-            <span className="lp-logo">🛒 Marketplace</span>
-            <span className="lp-logo">👥 Groups</span>
-            <span className="lp-logo">💬 Messenger</span>
-            <span className="lp-logo">🔎 Buy/Sell/Trade</span>
+            <span className="lp-logo">Marketplace</span>
+            <span className="lp-logo">Groups</span>
+            <span className="lp-logo">Messenger</span>
+            <span className="lp-logo">Buy/Sell/Trade</span>
           </div>
         </div>
       </div>
 
-      {/* Stats */}
       <div className="lp-wrap lp-section" style={{ paddingTop: 40 }}>
         <div className="lp-stats">
           {[
@@ -81,10 +74,9 @@ export default function MarketplaceLanding() {
         </div>
       </div>
 
-      {/* Features */}
       <div className="lp-wrap lp-section" style={{ paddingTop: 20 }}>
         <div className="lp-head-center">
-          <div className="lp-kicker">One agent, both sides</div>
+          <span className="lp-kicker">One agent, both sides</span>
           <h2 className="lp-h2">It sells, it buys, it negotiates</h2>
           <p className="lp-lead">
             Answers the second an inquiry lands, haggles in small steps, and never dips below the
@@ -93,24 +85,23 @@ export default function MarketplaceLanding() {
         </div>
         <div className="lp-features">
           <div className="lp-card">
-            <div className="lp-ic">💰</div>
+            <div className="lp-ic"><IconTag /></div>
             <h3>Sells for you</h3>
             <p>“Is this available?” answered in seconds. Negotiates up from lowballs and holds your floor — you just show up for pickup.</p>
           </div>
           <div className="lp-card">
-            <div className="lp-ic">🔎</div>
+            <div className="lp-ic"><IconSearch /></div>
             <h3>Buys for you</h3>
             <p>Tell it what you want and your max. It watches listings and group posts, reaches out first, and opens under budget.</p>
           </div>
           <div className="lp-card">
-            <div className="lp-ic">👥</div>
+            <div className="lp-ic"><IconUsers /></div>
             <h3>Works the groups</h3>
             <p>Searches your buy/sell/trade groups for matches and sends a warm message that references the actual post.</p>
           </div>
         </div>
       </div>
 
-      {/* Split */}
       <div className="lp-wrap lp-section" style={{ paddingTop: 20 }}>
         <div className="lp-split rev">
           <div className="lp-split-media">
@@ -128,7 +119,7 @@ export default function MarketplaceLanding() {
             />
           </div>
           <div>
-            <div className="lp-kicker">Never miss a deal</div>
+            <span className="lp-kicker">Never miss a deal</span>
             <h2>Every lead worked. Every reply on time.</h2>
             <p>
               Set your listings and your wishlist once. Wingman runs the inbox and the group feeds so
@@ -142,7 +133,7 @@ export default function MarketplaceLanding() {
                 "Hands you a ready-to-meet buyer or seller",
               ].map((t) => (
                 <div className="lp-tick" key={t}>
-                  <span className="ck">✓</span> {t}
+                  <span className="ck"><IconCheck /></span> {t}
                 </div>
               ))}
             </div>
@@ -150,10 +141,9 @@ export default function MarketplaceLanding() {
         </div>
       </div>
 
-      {/* Steps */}
       <div className="lp-wrap lp-section" style={{ paddingTop: 20 }}>
         <div className="lp-head-center">
-          <div className="lp-kicker">Set it once</div>
+          <span className="lp-kicker">Set it once</span>
           <h2 className="lp-h2">Turn your Marketplace into passive income</h2>
         </div>
         <div className="lp-steps">
@@ -171,10 +161,9 @@ export default function MarketplaceLanding() {
         </div>
       </div>
 
-      {/* Testimonials */}
       <div className="lp-wrap lp-section" style={{ paddingTop: 20 }}>
         <div className="lp-head-center">
-          <div className="lp-kicker">Sellers &amp; flippers love it</div>
+          <span className="lp-kicker">Sellers &amp; flippers love it</span>
           <h2 className="lp-h2">Sold faster, for more, with zero back-and-forth</h2>
         </div>
         <div className="lp-quotes">
@@ -184,9 +173,10 @@ export default function MarketplaceLanding() {
             ["Running 20 listings solo was a full-time job. Now it just… handles them.", "Chris", "Flipper"],
           ].map(([q, n, r]) => (
             <div className="lp-quote" key={n}>
+              <div className="stars">★★★★★</div>
               <p>“{q}”</p>
               <div className="who">
-                <span className="qa" />
+                <span className="qa">{(n as string)[0]}</span>
                 <div>
                   <div className="qn">{n}</div>
                   <div className="qr">{r}</div>
@@ -197,13 +187,12 @@ export default function MarketplaceLanding() {
         </div>
       </div>
 
-      {/* CTA */}
       <div className="lp-wrap lp-section" style={{ paddingTop: 0 }}>
         <div className="lp-cta-band">
           <h2>Let your Marketplace run itself.</h2>
           <p>Fully automated by default — you set the floors and the rules, it does the haggling.</p>
-          <Link href="/signup?use=marketplace" className="lp-btn primary lg">
-            Start for free →
+          <Link href="/signup?use=marketplace" className="lp-btn lg">
+            Start for free <IconArrow width={18} height={18} />
           </Link>
         </div>
       </div>
@@ -211,7 +200,7 @@ export default function MarketplaceLanding() {
       <footer className="lp-footer">
         <div className="lp-wrap lp-footer-grid">
           <span className="lp-brand">
-            <span className="mark">🪽</span> Wingman
+            <Logo size={30} /> Wingman
           </span>
           <div className="lp-foot-links">
             <Link href="/dating">Dating</Link>

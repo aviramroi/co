@@ -1,11 +1,12 @@
 import Link from "next/link";
+import { Logo } from "./Icons";
 
 export function PremiumNav({ getStartedHref = "/signup" }: { getStartedHref?: string }) {
   return (
     <nav className="lp-nav">
       <div className="lp-nav-inner">
         <Link href="/" className="lp-brand">
-          <span className="mark">🪽</span> Wingman
+          <Logo size={34} /> Wingman
         </Link>
         <div className="lp-nav-links">
           <Link href="/dating" className="hide-sm">
