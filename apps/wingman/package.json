@@ -1,0 +1,32 @@
+{
+  "name": "@openclaw/wingman",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Deployable AI agent that manages your Tinder conversations, Facebook Marketplace inquiries/quotes, and Facebook group outreach — one Claude brain, three channels, human-in-the-loop.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "wingman": "./dist/cli.js"
+  },
+  "scripts": {
+    "dev": "tsx watch src/cli.ts run",
+    "start": "node dist/cli.js run",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "cli": "tsx src/cli.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.68.0",
+    "dotenv": "^16.4.7"
+  },
+  "optionalDependencies": {
+    "playwright": "1.49.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}

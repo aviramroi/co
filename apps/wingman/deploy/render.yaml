@@ -1,0 +1,47 @@
+# Render blueprint for Wingman (agent + web).
+# In the Render dashboard: New → Blueprint → point it at this file
+# (apps/wingman/deploy/render.yaml). Paths below are repo-root relative.
+#
+# You'll be prompted for ANTHROPIC_API_KEY (optional); WINGMAN_AUTH_SECRET is
+# generated automatically. The web service discovers the agent's internal
+# address automatically.
+services:
+  # Private agent service — not exposed to the internet; the web app reaches it
+  # over Render's internal network.
+  - type: pserv
+    name: wingman-agent
+    runtime: docker
+    dockerfilePath: ./apps/wingman/Dockerfile
+    dockerContext: ./apps/wingman
+    region: oregon
+    plan: starter
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: WINGMAN_HOST
+        value: 0.0.0.0
+      - key: WINGMAN_AUTH_SECRET
+        generateValue: true
+      - key: ANTHROPIC_API_KEY
+        sync: false
+    disk:
+      name: wingman-state
+      mountPath: /app/.wingman
+      sizeGB: 1
+
+  # Public web app.
+  - type: web
+    name: wingman-web
+    runtime: docker
+    dockerfilePath: ./apps/wingman-web/Dockerfile
+    dockerContext: ./apps/wingman-web
+    region: oregon
+    plan: starter
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: WINGMAN_API
+        fromService:
+          type: pserv
+          name: wingman-agent
+          property: hostport

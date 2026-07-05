@@ -1,0 +1,40 @@
+# Wingman — agent + web, production compose.
+#
+# Usage:
+#   export WINGMAN_AUTH_SECRET=$(openssl rand -hex 32)
+#   export ANTHROPIC_API_KEY=sk-ant-...        # optional (heuristic fallback if unset)
+#   docker compose -f apps/wingman/docker-compose.yml up --build
+#
+# Then open http://localhost:3000 and create your operator account.
+services:
+  agent:
+    build:
+      context: .
+    environment:
+      NODE_ENV: production
+      WINGMAN_HOST: 0.0.0.0
+      WINGMAN_AUTH_SECRET: ${WINGMAN_AUTH_SECRET:?set WINGMAN_AUTH_SECRET (openssl rand -hex 32)}
+      WINGMAN_WEB_ORIGIN: ${WINGMAN_WEB_ORIGIN:-http://localhost:3000}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      # Live browser channels need Playwright + a display in the image; mock works out of the box.
+    volumes:
+      - wingman-state:/app/.wingman
+    ports:
+      - "4600:4600"
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ../wingman-web
+    environment:
+      NODE_ENV: production
+      # Reach the agent over the compose network by service name.
+      WINGMAN_API: http://agent:4600
+    ports:
+      - "3000:3000"
+    depends_on:
+      - agent
+    restart: unless-stopped
+
+volumes:
+  wingman-state:

@@ -1,0 +1,28 @@
+# Fly.io config for the Wingman agent (private — reached by the web app over the
+# Fly internal network at wingman-agent.internal:4600).
+#
+# Deploy:
+#   fly apps create wingman-agent
+#   fly volumes create wingman_state --size 1 -a wingman-agent
+#   fly secrets set -a wingman-agent \
+#     WINGMAN_AUTH_SECRET=$(openssl rand -hex 32) ANTHROPIC_API_KEY=sk-ant-...
+#   fly deploy -a wingman-agent -c apps/wingman/fly.toml
+app = "wingman-agent"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  NODE_ENV = "production"
+  WINGMAN_HOST = "0.0.0.0"
+  WINGMAN_PORT = "4600"
+  # No public HTTP service — the agent is reachable only on the private network.
+
+[mounts]
+  source = "wingman_state"
+  destination = "/app/.wingman"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "1gb"
