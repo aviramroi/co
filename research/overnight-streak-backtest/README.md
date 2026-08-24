@@ -29,11 +29,20 @@ cap as of 2026-08-24, taken from the daily Nasdaq screener snapshot published by
 ```bash
 pip install pandas numpy pyarrow yfinance
 
-# 1. download prices (needs access to a market-data vendor)
+TOP=50 ./run.sh    # smoke test: 50 names, ~1 minute
+./run.sh           # the real thing: 1000 names, last 5 years
+```
+
+`run.sh` downloads the prices once (cached to a parquet next to the script) and
+then runs the backtest, writing `report.md`, `stats.json` and `equity.csv` into
+`results/`. Knobs: `TOP`, `STREAK`, `COST`, `YEARS`, `START`, `END`.
+
+The two steps separately, if you want to drive them yourself:
+
+```bash
 python fetch_prices.py --universe universe_top1000.csv \
     --start 2021-08-24 --end 2026-08-24 --out prices.parquet
 
-# 2. run the backtest
 python overnight_streak.py --prices prices.parquet \
     --universe universe_top1000.csv --streak 3 --cost-bps 10 --out-dir results
 ```
@@ -42,7 +51,8 @@ Without any data at all, the engine still runs end to end on generated prices:
 
 ```bash
 python overnight_streak.py --synthetic --top 1000
-python test_overnight_streak.py     # 11 tests
+python test_overnight_streak.py     # 11 engine tests
+python test_fetch_prices.py        # 6 download-reshaping tests
 ```
 
 `--prices` accepts a long-format parquet/csv (`date, symbol, open, high, low,
@@ -96,7 +106,9 @@ mechanism regardless of how good the gross numbers look.
 | --- | --- |
 | `overnight_streak.py` | Engine + CLI (signals, portfolio, stats, benchmarks, sweeps) |
 | `fetch_prices.py` | Downloads OHLC bars into the parquet the engine expects |
+| `run.sh` | One command: download prices, then run the backtest |
 | `test_overnight_streak.py` | 11 tests: streak logic, costs, no look-ahead, split handling, planted-edge recovery |
+| `test_fetch_prices.py` | 6 tests: reshaping a yfinance download into the engine's schema |
 | `universe_top1000.csv` | Top 1,000 US names by market cap, 2026-08-24 |
 | `us_tickers_snapshot.csv` | Full 5,412-name Nasdaq screener snapshot |
 
